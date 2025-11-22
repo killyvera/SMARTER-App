@@ -67,11 +67,25 @@ if not exist "node_modules\.prisma" (
 )
 cd ..
 
+REM Obtener IP local
+for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /c:"IPv4"') do (
+    set LOCAL_IP=%%a
+    goto :found_ip
+)
+:found_ip
+set LOCAL_IP=%LOCAL_IP:~1%
+
 REM Iniciar servidor de desarrollo
 echo [4/4] Iniciando servidor de desarrollo...
 echo.
 echo ========================================
-echo   Servidor iniciando en http://localhost:3000
+echo   Servidor iniciando en:
+echo   - Local:    http://localhost:3000
+echo   - Red:      http://%LOCAL_IP%:3000
+echo.
+echo   Para acceder desde tu celular:
+echo   Abre el navegador y ve a: http://%LOCAL_IP%:3000
+echo.
 echo   Presiona Ctrl+C para detener
 echo ========================================
 echo.

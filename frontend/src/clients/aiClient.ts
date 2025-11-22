@@ -77,6 +77,8 @@ export interface GoalValidationResponse {
   average: number;
   passed: boolean;
   feedback: string;
+  suggestedTitle?: string | null;
+  suggestedDescription?: string | null;
   suggestedMiniTasks?: Array<{
     title: string;
     description?: string;
@@ -119,6 +121,11 @@ T (Time-bound - Con plazo): ¿Tiene un plazo definido?
 E (Evaluate - Evaluable): ¿Se puede evaluar el progreso?
 R (Readjust - Reajustable): ¿Se puede reajustar si es necesario?
 
+IMPORTANTE: Además de evaluar, debes:
+1. Analizar el título y sugerir una versión mejorada que sea más específica, medible y clara
+2. Analizar la descripción y sugerir mejoras si es necesario
+3. Generar minitareas sugeridas que ayuden a alcanzar la meta
+
 Responde SOLO con un JSON válido en este formato exacto:
 {
   "scores": {
@@ -133,10 +140,12 @@ Responde SOLO con un JSON válido en este formato exacto:
   "average": <promedio de los 7 scores>,
   "passed": <true si S, M, A, R, T >= 60 y average >= 70, false en caso contrario>,
   "feedback": "<comentario breve sobre la meta>",
+  "suggestedTitle": "<título mejorado que sea más específico y medible, o null si el título actual es óptimo>",
+  "suggestedDescription": "<descripción mejorada con más detalles, o null si la descripción actual es óptima>",
   "suggestedMiniTasks": [
     {
-      "title": "<título de minitarea sugerida>",
-      "description": "<descripción opcional>",
+      "title": "<título de minitarea sugerida - debe ser una acción concreta>",
+      "description": "<descripción opcional de la minitarea>",
       "priority": <número 1-10>
     }
   ]

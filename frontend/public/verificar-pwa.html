@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificar PWA - Smarter App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .check {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .ok {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        h1 { color: #333; }
+        h2 { color: #666; margin-top: 30px; }
+        code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Verificación de PWA - Smarter App</h1>
+    
+    <h2>Requisitos para Instalación en Chrome</h2>
+    
+    <div id="checks"></div>
+    
+    <h2>Información del Manifest</h2>
+    <pre id="manifest-info"></pre>
+    
+    <h2>Service Worker</h2>
+    <div id="sw-info"></div>
+    
+    <h2>Instalabilidad</h2>
+    <div id="installability"></div>
+
+    <script>
+        const checks = [];
+        
+        // 1. Verificar HTTPS o localhost
+        const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+        checks.push({
+            name: 'HTTPS o localhost',
+            status: isSecure ? 'ok' : 'error',
+            message: isSecure ? '✅ Conexión segura' : '❌ Se requiere HTTPS o localhost'
+        });
+        
+        // 2. Verificar manifest
+        fetch('/manifest.webmanifest')
+            .then(res => res.json())
+            .then(manifest => {
+                checks.push({
+                    name: 'Manifest válido',
+                    status: 'ok',
+                    message: '✅ Manifest encontrado y válido'
+                });
+                
+                document.getElementById('manifest-info').textContent = JSON.stringify(manifest, null, 2);
+                
+                // Verificar iconos
+                const hasIcons = manifest.icons && manifest.icons.length > 0;
+                checks.push({
+                    name: 'Iconos en manifest',
+                    status: hasIcons ? 'ok' : 'error',
+                    message: hasIcons ? `✅ ${manifest.icons.length} icono(s) definido(s)` : '❌ No hay iconos definidos'
+                });
+                
+                // Verificar iconos accesibles
+                if (hasIcons) {
+                    Promise.all(manifest.icons.map(icon => 
+                        fetch(icon.src).then(r => ({ src: icon.src, ok: r.ok }))
+                    )).then(results => {
+                        const allOk = results.every(r => r.ok);
+                        const failed = results.filter(r => !r.ok);
+                        checks.push({
+                            name: 'Iconos accesibles',
+                            status: allOk ? 'ok' : 'error',
+                            message: allOk 
+                                ? '✅ Todos los iconos son accesibles'
+                                : `❌ Iconos no accesibles: ${failed.map(f => f.src).join(', ')}`
+                        });
+                        renderChecks();
+                    });
+                }
+                
+                renderChecks();
+            })
+            .catch(err => {
+                checks.push({
+                    name: 'Manifest válido',
+                    status: 'error',
+                    message: '❌ No se pudo cargar el manifest: ' + err.message
+                });
+                renderChecks();
+            });
+        
+        // 3. Verificar Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                if (registrations.length > 0) {
+                    checks.push({
+                        name: 'Service Worker registrado',
+                        status: 'ok',
+                        message: `✅ ${registrations.length} Service Worker(s) registrado(s)`
+                    });
+                    document.getElementById('sw-info').innerHTML = 
+                        `<div class="check ok">✅ Service Worker activo: ${registrations[0].scope}</div>`;
+                } else {
+                    checks.push({
+                        name: 'Service Worker registrado',
+                        status: 'warning',
+                        message: '⚠️ No hay Service Workers registrados'
+                    });
+                    document.getElementById('sw-info').innerHTML = 
+                        '<div class="check warning">⚠️ Service Worker no registrado</div>';
+                }
+                renderChecks();
+            });
+        } else {
+            checks.push({
+                name: 'Service Worker soportado',
+                status: 'error',
+                message: '❌ Service Workers no soportados en este navegador'
+            });
+            renderChecks();
+        }
+        
+        // 4. Verificar instalabilidad
+        let deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            checks.push({
+                name: 'Evento beforeinstallprompt',
+                status: 'ok',
+                message: '✅ La app es instalable (evento beforeinstallprompt disparado)'
+            });
+            document.getElementById('installability').innerHTML = 
+                '<div class="check ok">✅ La app cumple con los criterios de instalabilidad de Chrome</div>';
+            renderChecks();
+        });
+        
+        // Verificar si ya está instalada
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            document.getElementById('installability').innerHTML = 
+                '<div class="check ok">✅ La app ya está instalada (modo standalone)</div>';
+        } else {
+            setTimeout(() => {
+                if (!deferredPrompt) {
+                    document.getElementById('installability').innerHTML = 
+                        '<div class="check warning">⚠️ La app aún no es instalable. Verifica los requisitos arriba.</div>';
+                }
+            }, 2000);
+        }
+        
+        function renderChecks() {
+            const container = document.getElementById('checks');
+            container.innerHTML = checks.map(check => {
+                const className = check.status === 'ok' ? 'ok' : check.status === 'error' ? 'error' : 'warning';
+                return `<div class="check ${className}"><strong>${check.name}:</strong> ${check.message}</div>`;
+            }).join('');
+        }
+        
+        // Render inicial
+        renderChecks();
+    </script>
+</body>
+</html>
+

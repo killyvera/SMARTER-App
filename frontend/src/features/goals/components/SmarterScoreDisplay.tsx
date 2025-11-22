@@ -1,10 +1,19 @@
 'use client';
 
-import type { SmarterScore } from '@smarter-app/shared';
 import { CheckCircle2, XCircle } from 'lucide-react';
 
 interface SmarterScoreDisplayProps {
-  score: SmarterScore;
+  score: {
+    specific: number;
+    measurable: number;
+    achievable: number;
+    relevant: number;
+    timebound: number;
+    evaluate: number;
+    readjust: number;
+    average: number;
+    passed: boolean;
+  };
 }
 
 const criteriaLabels: Record<string, string> = {

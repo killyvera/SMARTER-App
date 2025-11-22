@@ -59,11 +59,48 @@ export function useValidateGoal() {
 
   return useMutation({
     mutationFn: (id: string) =>
-      apiRequest<{ score: any; feedback: string }>(`/goals/${id}/validate`, {
+      apiRequest<{
+        score: any | null;
+        feedback: string;
+        suggestedTitle?: string | null;
+        suggestedDescription?: string | null;
+        suggestedMiniTasks: any[];
+        previewScores?: any;
+        previewAverage?: number;
+        previewPassed?: boolean;
+      }>(`/goals/${id}/validate`, {
         method: 'POST',
       }),
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['goals', id] });
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+    },
+  });
+}
+
+export function useConfirmGoalValidation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: {
+      goalId: string;
+      acceptedTitle?: string;
+      acceptedDescription?: string;
+      acceptedMiniTasks?: Array<{ title: string; description?: string; priority: number }>;
+    }) =>
+      apiRequest<{ score: any; feedback: string; suggestedMiniTasks: any[] }>(
+        `/goals/${data.goalId}/validate`,
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            acceptedTitle: data.acceptedTitle,
+            acceptedDescription: data.acceptedDescription,
+            acceptedMiniTasks: data.acceptedMiniTasks,
+          }),
+        }
+      ),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['goals', variables.goalId] });
       queryClient.invalidateQueries({ queryKey: ['goals'] });
     },
   });

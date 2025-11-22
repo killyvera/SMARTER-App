@@ -24,8 +24,20 @@ export function GoalForm({ onSubmit, isLoading, defaultValues }: GoalFormProps) 
     defaultValues,
   });
 
+  // Transformar el deadline de datetime-local a ISO string antes de enviar
+  const handleFormSubmit = (data: CreateGoalInput) => {
+    // Si hay deadline en formato datetime-local, convertirlo a ISO string
+    if (data.deadline && typeof data.deadline === 'string' && data.deadline.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)) {
+      // Convertir datetime-local (YYYY-MM-DDTHH:mm) a ISO string
+      const isoString = new Date(data.deadline).toISOString();
+      onSubmit({ ...data, deadline: isoString });
+    } else {
+      onSubmit(data);
+    }
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
       <div>
         <Label htmlFor="title">Título *</Label>
         <Input

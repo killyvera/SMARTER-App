@@ -11,7 +11,43 @@ export async function POST(
   
   try {
     const userId = await getUserId();
-    const result = await validateGoalService(params.id, userId);
+    const body = await request.json().catch(() => ({}));
+    
+    // Si viene con acceptedTitle, acceptedDescription o acceptedMiniTasks, es confirmación final
+    const isConfirmation = !!(body.acceptedTitle || body.acceptedDescription || (body.acceptedMiniTasks && Array.isArray(body.acceptedMiniTasks) && body.acceptedMiniTasks.length > 0));
+    
+    console.log('=== API VALIDATE - INICIO ===');
+    console.log('Validación de goal:', {
+      goalId: params.id,
+      userId,
+      isConfirmation,
+      hasAcceptedTitle: !!body.acceptedTitle,
+      hasAcceptedDescription: !!body.acceptedDescription,
+      acceptedMiniTasks: body.acceptedMiniTasks,
+      acceptedMiniTasksLength: body.acceptedMiniTasks?.length,
+      acceptedMiniTasksType: Array.isArray(body.acceptedMiniTasks) ? 'array' : typeof body.acceptedMiniTasks,
+    });
+    
+    const options = isConfirmation ? {
+      acceptedTitle: body.acceptedTitle,
+      acceptedDescription: body.acceptedDescription,
+      acceptedMiniTasks: body.acceptedMiniTasks,
+    } : undefined;
+    
+    console.log('Opciones pasadas al servicio:', {
+      hasOptions: !!options,
+      hasAcceptedMiniTasks: !!(options?.acceptedMiniTasks),
+      acceptedMiniTasksLength: options?.acceptedMiniTasks?.length,
+    });
+    
+    const result = await validateGoalService(params.id, userId, options);
+    
+    console.log('=== API VALIDATE - RESULTADO ===');
+    console.log('Resultado:', {
+      hasScore: !!result.score,
+      hasFeedback: !!result.feedback,
+      suggestedMiniTasksLength: result.suggestedMiniTasks?.length,
+    });
     
     const duration = Date.now() - startTime;
     logApiRequest('POST', `/api/goals/${params.id}/validate`, 200, duration);

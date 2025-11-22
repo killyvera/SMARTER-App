@@ -1,0 +1,55 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+
+export function useNotifications() {
+  const [permission, setPermission] = useState<NotificationPermission>('default');
+  const [isSupported, setIsSupported] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setIsSupported(true);
+      setPermission(Notification.permission);
+    }
+  }, []);
+
+  const requestPermission = async (): Promise<boolean> => {
+    if (!isSupported) {
+      return false;
+    }
+
+    try {
+      const result = await Notification.requestPermission();
+      setPermission(result);
+      return result === 'granted';
+    } catch (error) {
+      console.error('Error al solicitar permiso de notificaciones:', error);
+      return false;
+    }
+  };
+
+  const showNotification = (title: string, options?: NotificationOptions) => {
+    if (!isSupported || permission !== 'granted') {
+      return;
+    }
+
+    try {
+      new Notification(title, {
+        icon: '/icon-192x192.png',
+        badge: '/icon-192x192.png',
+        ...options,
+      });
+    } catch (error) {
+      console.error('Error al mostrar notificación:', error);
+    }
+  };
+
+  return {
+    isSupported,
+    permission,
+    requestPermission,
+    showNotification,
+  };
+}
+
+

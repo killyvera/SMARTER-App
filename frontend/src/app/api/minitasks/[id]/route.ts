@@ -4,6 +4,7 @@ import {
   getMiniTaskService,
   updateMiniTaskService,
 } from '@/services/miniTaskService';
+import { getUserId } from '@/lib/auth/getUserId';
 
 // GET /api/minitasks/[id]
 export async function GET(
@@ -11,7 +12,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = 'temp-user-id'; // TODO: Obtener del token
+    const userId = await getUserId();
     const miniTask = await getMiniTaskService(params.id, userId);
     return NextResponse.json(miniTask);
   } catch (error) {
@@ -28,7 +29,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = 'temp-user-id'; // TODO: Obtener del token
+    const userId = await getUserId();
     const body = await request.json();
     const data = updateMiniTaskSchema.parse(body);
     

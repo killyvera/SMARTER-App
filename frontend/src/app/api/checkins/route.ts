@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createCheckInSchema } from '@smarter-app/shared';
 import { createCheckInService } from '@/services/checkInService';
+import { getUserId } from '@/lib/auth/getUserId';
 
 export async function POST(request: NextRequest) {
   try {
-    const userId = 'temp-user-id'; // TODO: Obtener del token
+    const userId = await getUserId();
     const body = await request.json();
     const data = createCheckInSchema.parse(body);
     

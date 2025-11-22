@@ -8,8 +8,8 @@
   ],
   "scripts": {
     "dev": "cd frontend && npm run dev",
-    "build": "npm run build --workspaces",
-    "test": "npm run test --workspaces"
+    "build": "npm run build --if-present --workspaces",
+    "test": "npm run test --if-present --workspaces"
   },
   "engines": {
     "node": ">=18.0.0"

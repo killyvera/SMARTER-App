@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCheckInsByGoalService } from '@/services/checkInService';
+import { getUserId } from '@/lib/auth/getUserId';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { goalId: string } }
 ) {
   try {
-    const userId = 'temp-user-id'; // TODO: Obtener del token
+    const userId = await getUserId();
     const checkIns = await getCheckInsByGoalService(params.goalId, userId);
     return NextResponse.json(checkIns);
   } catch (error) {

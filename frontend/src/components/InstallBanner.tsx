@@ -3,13 +3,22 @@
 import { useInstallPrompt } from '@/hooks/useInstallPrompt';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export function InstallBanner() {
   const { isInstallable, promptInstall } = useInstallPrompt();
   const [dismissed, setDismissed] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  if (!isInstallable || dismissed) {
+  useEffect(() => {
+    setMounted(true);
+    // Verificar si ya fue descartado
+    if (typeof window !== 'undefined' && localStorage.getItem('installBannerDismissed')) {
+      setDismissed(true);
+    }
+  }, []);
+
+  if (!mounted || !isInstallable || dismissed) {
     return null;
   }
 
@@ -22,13 +31,10 @@ export function InstallBanner() {
 
   const handleDismiss = () => {
     setDismissed(true);
-    localStorage.setItem('installBannerDismissed', 'true');
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('installBannerDismissed', 'true');
+    }
   };
-
-  // Verificar si ya fue descartado
-  if (typeof window !== 'undefined' && localStorage.getItem('installBannerDismissed')) {
-    return null;
-  }
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-primary text-primary-foreground p-4 shadow-lg z-50 md:bottom-4 md:left-4 md:right-auto md:rounded-lg md:max-w-sm">

@@ -4,18 +4,26 @@ import {
   createGoalService,
   getGoalsService,
 } from '@/services/goalService';
+import { logApiRequest, logApiError } from '@/lib/api-logger';
+import { getUserId } from '@/lib/auth/getUserId';
 
 // GET /api/goals - Listar goals
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+  const { searchParams } = new URL(request.url);
+  const status = searchParams.get('status');
+  
   try {
-    // TODO: Obtener userId del token/sesión
-    const userId = 'temp-user-id'; // Temporal
-    const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
+    const userId = await getUserId();
     
     const goals = await getGoalsService(userId, status ? { status } : undefined);
+    const duration = Date.now() - startTime;
+    logApiRequest('GET', `/api/goals${status ? `?status=${status}` : ''}`, 200, duration);
+    
     return NextResponse.json(goals);
   } catch (error) {
+    const duration = Date.now() - startTime;
+    logApiError('GET', '/api/goals', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Error al obtener goals' },
       { status: 500 }
@@ -25,15 +33,21 @@ export async function GET(request: NextRequest) {
 
 // POST /api/goals - Crear goal
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  
   try {
-    // TODO: Obtener userId del token/sesión
-    const userId = 'temp-user-id'; // Temporal
+    const userId = await getUserId();
     const body = await request.json();
     const data = createGoalSchema.parse(body);
     
     const goal = await createGoalService(userId, data);
+    const duration = Date.now() - startTime;
+    logApiRequest('POST', '/api/goals', 201, duration);
+    
     return NextResponse.json(goal, { status: 201 });
   } catch (error) {
+    const duration = Date.now() - startTime;
+    logApiError('POST', '/api/goals', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Error al crear goal' },
       { status: 400 }

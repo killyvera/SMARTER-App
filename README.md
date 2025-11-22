@@ -26,7 +26,7 @@ Aplicación móvil-first PWA para gestión personal de objetivos usando el méto
    
    Edita `.env.local` y configura:
    - `DATABASE_URL`: Ruta a la base de datos SQLite (por defecto: `file:./prisma/dev.db`)
-   - `JWT_SECRET`: Clave secreta para JWT (mínimo 32 caracteres)
+   - `JWT_SECRET`: Clave secreta para JWT (mínimo 32 caracteres). Genera uno con: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
    - `AI_PROVIDER`: `openai` o `azure`
    - `OPENAI_API_KEY`: Tu API key de OpenAI (si usas OpenAI)
    - `OPENAI_MODEL`: Modelo a usar (por defecto: `gpt-4`)

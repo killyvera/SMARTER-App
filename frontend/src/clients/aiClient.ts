@@ -216,7 +216,22 @@ ${request.userContext ? `Contexto del usuario: ${request.userContext}` : ''}`;
     return parsed;
   } catch (error) {
     console.error('Error en validación de goal con IA:', error);
-    throw new Error('Error al validar goal con IA');
+    
+    // Proporcionar mensaje de error más específico
+    if (error instanceof Error) {
+      // Si es un error de configuración, mostrarlo claramente
+      if (error.message.includes('no está configurada') || error.message.includes('no está configurado')) {
+        throw new Error(`Configuración de IA faltante: ${error.message}`);
+      }
+      // Si es un error de API, mostrar el mensaje original
+      if (error.message.includes('API') || error.message.includes('key')) {
+        throw new Error(`Error de API de IA: ${error.message}`);
+      }
+      // Para otros errores, incluir el mensaje original
+      throw new Error(`Error al validar goal con IA: ${error.message}`);
+    }
+    
+    throw new Error('Error al validar goal con IA: Error desconocido');
   }
 }
 

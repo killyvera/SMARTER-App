@@ -10,14 +10,25 @@ export const metadata: Metadata = {
   title: 'Smarter App - Gestión de Metas',
   description: 'Aplicación para gestión de metas basada en el método SMARTER',
   manifest: '/manifest.webmanifest',
-  themeColor: '#222222',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: 'Smarter App',
   },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
 };
+
+export function generateViewport() {
+  return {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    themeColor: '#222222',
+  };
+}
 
 export default function RootLayout({
   children,

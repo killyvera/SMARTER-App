@@ -76,6 +76,28 @@ export async function findMiniTasksByStatus(
   });
 }
 
+export async function findMiniTasksByUser(userId: string): Promise<MiniTask[]> {
+  return prisma.miniTask.findMany({
+    where: {
+      goal: {
+        userId,
+      },
+    },
+    include: {
+      goal: {
+        select: {
+          id: true,
+          title: true,
+        },
+      },
+      score: true,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+}
+
 export async function updateMiniTask(
   id: string,
   data: {
@@ -90,4 +112,3 @@ export async function updateMiniTask(
     data,
   });
 }
-

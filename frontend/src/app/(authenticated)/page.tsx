@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Target, CheckSquare, TrendingUp, Plus } from 'lucide-react';
+import { PendingTasksNotification } from '@/components/alarms/PendingTasksNotification';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -49,6 +50,9 @@ export default function DashboardPage() {
           Aquí tienes un resumen de tu progreso
         </p>
       </div>
+
+      {/* Notificaciones de tareas pendientes */}
+      <PendingTasksNotification />
 
       {/* Cards de estadísticas principales */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

@@ -30,8 +30,14 @@ export function JournalEntryForm({
         : new Date(initialData.entryDate).toISOString().split('T')[0]
       : new Date().toISOString().split('T')[0]
   );
+  const predefinedUnits = ['horas', 'páginas', 'items', '%', 'minutos', 'ejercicios', 'lecciones', 'sesiones', 'veces'];
+  const initialUnit = initialData?.progressUnit || '';
+  const isInitialCustom = initialUnit && !predefinedUnits.includes(initialUnit);
+  
   const [progressValue, setProgressValue] = useState(initialData?.progressValue?.toString() || '');
-  const [progressUnit, setProgressUnit] = useState(initialData?.progressUnit || '');
+  const [progressUnit, setProgressUnit] = useState(isInitialCustom ? '' : initialUnit);
+  const [customUnit, setCustomUnit] = useState(isInitialCustom ? initialUnit : '');
+  const [isCustomUnit, setIsCustomUnit] = useState(isInitialCustom);
   const [timeSpent, setTimeSpent] = useState(initialData?.timeSpent?.toString() || '');
   const [notes, setNotes] = useState(initialData?.notes || '');
   const [obstacles, setObstacles] = useState(initialData?.obstacles || '');
@@ -40,10 +46,17 @@ export function JournalEntryForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    const finalUnit = isCustomUnit ? customUnit : progressUnit;
+    
+    // Crear fecha correctamente desde el string YYYY-MM-DD para evitar problemas de zona horaria
+    // Si solo tenemos la fecha (sin hora), crear la fecha en zona horaria local
+    const [year, month, day] = entryDate.split('-').map(Number);
+    const dateObj = new Date(year, month - 1, day);
+    
     await onSubmit({
-      entryDate: new Date(entryDate),
+      entryDate: dateObj,
       progressValue: progressValue ? parseFloat(progressValue) : undefined,
-      progressUnit: progressUnit || undefined,
+      progressUnit: finalUnit || undefined,
       timeSpent: timeSpent ? parseInt(timeSpent) : undefined,
       notes: notes || undefined,
       obstacles: obstacles || undefined,
@@ -54,6 +67,8 @@ export function JournalEntryForm({
     if (!initialData) {
       setProgressValue('');
       setProgressUnit('');
+      setCustomUnit('');
+      setIsCustomUnit(false);
       setTimeSpent('');
       setNotes('');
       setObstacles('');
@@ -102,15 +117,61 @@ export function JournalEntryForm({
               value={progressValue}
               onChange={(e) => setProgressValue(e.target.value)}
               placeholder="0"
-            />
-            <Input
-              type="text"
-              value={progressUnit}
-              onChange={(e) => setProgressUnit(e.target.value)}
-              placeholder="unidad (ej: horas, páginas)"
               className="flex-1"
             />
+            {!isCustomUnit ? (
+              <select
+                value={progressUnit}
+                onChange={(e) => {
+                  if (e.target.value === 'custom') {
+                    setIsCustomUnit(true);
+                    setProgressUnit('');
+                  } else {
+                    setProgressUnit(e.target.value);
+                  }
+                }}
+                className="flex h-10 w-40 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">Unidad...</option>
+                <option value="horas">horas</option>
+                <option value="páginas">páginas</option>
+                <option value="items">items</option>
+                <option value="%">%</option>
+                <option value="minutos">minutos</option>
+                <option value="ejercicios">ejercicios</option>
+                <option value="lecciones">lecciones</option>
+                <option value="sesiones">sesiones</option>
+                <option value="veces">veces</option>
+                <option value="custom">Personalizada...</option>
+              </select>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  value={customUnit}
+                  onChange={(e) => setCustomUnit(e.target.value)}
+                  placeholder="especificar unidad"
+                  className="w-32"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsCustomUnit(false);
+                    setCustomUnit('');
+                  }}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
           </div>
+          {(progressUnit || (isCustomUnit && customUnit)) && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Unidad: <span className="font-medium">{isCustomUnit ? customUnit : progressUnit}</span>
+            </p>
+          )}
         </div>
 
         <div>

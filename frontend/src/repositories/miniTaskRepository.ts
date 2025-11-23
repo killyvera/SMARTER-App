@@ -180,25 +180,72 @@ export async function findMiniTasksByStatus(
 }
 
 export async function findMiniTasksByUser(userId: string): Promise<MiniTask[]> {
-  return prisma.miniTask.findMany({
-    where: {
-      goal: {
-        userId,
-      },
-    },
-    include: {
-      goal: {
-        select: {
-          id: true,
-          title: true,
+  try {
+    const tasks = await prisma.miniTask.findMany({
+      where: {
+        goal: {
+          userId,
         },
       },
-      score: true,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
+      include: {
+        goal: {
+          select: {
+            id: true,
+            title: true,
+            userId: true,
+          },
+        },
+        score: true,
+        plugins: {
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    
+    // Parsear configs de plugins y asegurar valores por defecto
+    return tasks.map(task => ({
+      ...task,
+      unlocked: task.unlocked ?? false,
+      plugins: task.plugins?.map(plugin => ({
+        ...plugin,
+        config: typeof plugin.config === 'string' ? JSON.parse(plugin.config) : plugin.config,
+      })) || [],
+    })) as MiniTask[];
+  } catch (error) {
+    // Si las tablas de plugins no existen aún, hacer query sin ellas
+    console.warn('Error al incluir plugins en findMiniTasksByUser, usando query básica:', error);
+    const tasks = await prisma.miniTask.findMany({
+      where: {
+        goal: {
+          userId,
+        },
+      },
+      include: {
+        goal: {
+          select: {
+            id: true,
+            title: true,
+            userId: true,
+          },
+        },
+        score: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    
+    return tasks.map(task => ({
+      ...task,
+      unlocked: task.unlocked ?? false,
+      plugins: [],
+    })) as MiniTask[];
+  }
 }
 
 export async function updateMiniTask(

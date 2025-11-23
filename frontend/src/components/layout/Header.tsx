@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUIStore } from '@/stores/uiStore';
 import { Button } from '@/components/ui/button';
 import { Menu, LogOut, User } from 'lucide-react';
+import { AlarmBadge } from '@/components/alarms/AlarmBadge';
 
 export function Header() {
   const { user, logout } = useAuth();
@@ -26,8 +27,9 @@ export function Header() {
           <h1 className="text-lg font-semibold">Smarter App</h1>
         </div>
 
-        {/* Sección derecha: User info + Logout */}
+        {/* Sección derecha: Alarmas + User info + Logout */}
         <div className="ml-auto flex items-center gap-4">
+          <AlarmBadge />
           {user && (
             <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
               <User className="h-4 w-4" />

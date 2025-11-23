@@ -279,6 +279,32 @@ export async function unlockMiniTaskService(miniTaskId: string, userId: string) 
   console.log('🔌 [UNLOCK] Creando plugins en base de datos...');
   for (const plugin of unlockResult.plugins) {
     await createMiniTaskPlugin(miniTaskId, plugin.id, plugin.config);
+    
+    // Si es plugin calendar con checklistItems, crear los items del checklist
+    if (plugin.id === 'calendar' && plugin.config?.checklistEnabled && plugin.config?.checklistItems) {
+      const { createChecklistItem } = await import('@/repositories/miniTaskChecklistRepository');
+      console.log('📝 [UNLOCK] Creando items del checklist:', plugin.config.checklistItems);
+      
+      for (let i = 0; i < plugin.config.checklistItems.length; i++) {
+        await createChecklistItem(miniTaskId, {
+          label: plugin.config.checklistItems[i],
+          order: i,
+        });
+      }
+      console.log(`✅ [UNLOCK] ${plugin.config.checklistItems.length} items del checklist creados`);
+    }
+    
+    // Si es plugin calendar con checklistType 'single' y checklistLabel, crear un solo item
+    if (plugin.id === 'calendar' && plugin.config?.checklistEnabled && plugin.config?.checklistType === 'single' && plugin.config?.checklistLabel) {
+      const { createChecklistItem } = await import('@/repositories/miniTaskChecklistRepository');
+      console.log('📝 [UNLOCK] Creando checklist single:', plugin.config.checklistLabel);
+      
+      await createChecklistItem(miniTaskId, {
+        label: plugin.config.checklistLabel,
+        order: 0,
+      });
+      console.log('✅ [UNLOCK] Checklist single creado');
+    }
   }
   
   // Guardar score SMARTER (siempre, porque unlock también valida)

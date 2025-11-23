@@ -75,6 +75,7 @@ model MiniTask {
   metrics      MiniTaskMetric[]
   plugins      MiniTaskPlugin[]
   journalEntries MiniTaskJournalEntry[]
+  checklistItems MiniTaskChecklistItem[]
 
   @@index([goalId])
   @@index([status])
@@ -179,6 +180,7 @@ model MiniTaskJournalEntry {
   obstacles       String?  // Obstáculos encontrados
   mood            String?  // Estado de ánimo: positivo, neutral, negativo
   timeSpent       Int?     // Minutos dedicados
+  checklistCompleted Boolean? // Si el checklist del día fue completado
   metricsData     String?  // JSON con datos específicos de métricas configuradas
   coachQuery      String?  // Pregunta al agente coach
   coachResponse   String?  // Respuesta del agente coach
@@ -191,5 +193,21 @@ model MiniTaskJournalEntry {
   @@unique([miniTaskId, entryDate])
   @@index([miniTaskId])
   @@index([entryDate])
+}
+
+model MiniTaskChecklistItem {
+  id          String   @id @default(cuid())
+  miniTaskId  String
+  label       String   // Texto del elemento (ej: "Lienzo", "Pinturas", "Pinceles")
+  completed   Boolean  @default(false)
+  completedAt DateTime?
+  order       Int      @default(0) // Orden en la lista
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  miniTask MiniTask @relation(fields: [miniTaskId], references: [id], onDelete: Cascade)
+
+  @@index([miniTaskId])
+  @@index([completed])
 }
 

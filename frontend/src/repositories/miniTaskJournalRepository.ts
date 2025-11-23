@@ -12,6 +12,7 @@ export async function createMiniTaskJournalEntry(
     obstacles?: string;
     mood?: string;
     timeSpent?: number;
+    checklistCompleted?: boolean;
     metricsData?: Record<string, any>;
   }
 ): Promise<MiniTaskJournalEntry> {
@@ -27,6 +28,7 @@ export async function createMiniTaskJournalEntry(
       obstacles: data.obstacles,
       mood: data.mood,
       timeSpent: data.timeSpent,
+      checklistCompleted: data.checklistCompleted,
       metricsData: data.metricsData ? JSON.stringify(data.metricsData) : null,
     },
   });
@@ -111,6 +113,7 @@ export async function updateMiniTaskJournalEntry(
     obstacles?: string;
     mood?: string;
     timeSpent?: number;
+    checklistCompleted?: boolean;
     metricsData?: Record<string, any>;
     coachQuery?: string;
     coachResponse?: string;
@@ -125,6 +128,7 @@ export async function updateMiniTaskJournalEntry(
   if (data.obstacles !== undefined) updateData.obstacles = data.obstacles;
   if (data.mood !== undefined) updateData.mood = data.mood;
   if (data.timeSpent !== undefined) updateData.timeSpent = data.timeSpent;
+  if (data.checklistCompleted !== undefined) updateData.checklistCompleted = data.checklistCompleted;
   if (data.metricsData !== undefined) updateData.metricsData = JSON.stringify(data.metricsData);
   if (data.coachQuery !== undefined) updateData.coachQuery = data.coachQuery;
   if (data.coachResponse !== undefined) updateData.coachResponse = data.coachResponse;

@@ -92,10 +92,10 @@ async function main() {
         unlocked: true,
         unlockedAt: new Date('2024-01-20').toISOString(),
         plugins: [
-          { id: 'calendar', config: { enabled: true, frequency: 'daily', alarmTime: '09:00' } },
+          { id: 'calendar', config: { enabled: true, frequency: 'daily', alarmTimes: ['09:00'], checklistEnabled: false } },
           { id: 'chart', config: { enabled: true, chartType: 'line', metricType: 'horas-estudiadas', timeRange: 'week' } },
           { id: 'progress-tracker', config: { enabled: true, targetValue: 40, unit: 'horas' } },
-          { id: 'reminder', config: { enabled: true, times: ['09:00', '18:00'] } },
+          { id: 'reminder', config: { enabled: true, reminderTimes: ['09:00', '18:00'] } },
         ],
       }),
       createdAt: new Date('2024-01-20'),
@@ -121,7 +121,7 @@ async function main() {
     data: {
       miniTaskId: mt1_1.id,
       pluginId: 'calendar',
-      config: JSON.stringify({ enabled: true, frequency: 'daily', alarmTime: '09:00' }),
+      config: JSON.stringify({ enabled: true, frequency: 'daily', alarmTimes: ['09:00'], checklistEnabled: false }),
       enabled: true,
     },
   });
@@ -145,7 +145,7 @@ async function main() {
     data: {
       miniTaskId: mt1_1.id,
       pluginId: 'reminder',
-      config: JSON.stringify({ enabled: true, times: ['09:00', '18:00'] }),
+      config: JSON.stringify({ enabled: true, reminderTimes: ['09:00', '18:00'] }),
       enabled: true,
     },
   });
@@ -377,7 +377,7 @@ async function main() {
         unlocked: true,
         unlockedAt: new Date('2024-10-20').toISOString(),
         plugins: [
-          { id: 'calendar', config: { enabled: true, frequency: 'daily', alarmTime: '08:00' } },
+          { id: 'calendar', config: { enabled: true, frequency: 'daily', alarmTimes: ['08:00', '20:00'], checklistEnabled: true, checklistLabel: 'Completar escritura diaria' } },
           { id: 'chart', config: { enabled: true, chartType: 'bar', metricType: 'páginas-escritas', timeRange: 'week' } },
           { id: 'progress-tracker', config: { enabled: true, targetValue: 25, unit: 'páginas' } },
           { id: 'notification', config: { enabled: true, frequency: 'daily' } },
@@ -406,7 +406,7 @@ async function main() {
     data: {
       miniTaskId: mt2_3.id,
       pluginId: 'calendar',
-      config: JSON.stringify({ enabled: true, frequency: 'daily', alarmTime: '08:00' }),
+      config: JSON.stringify({ enabled: true, frequency: 'daily', alarmTimes: ['08:00', '20:00'], checklistEnabled: true, checklistLabel: 'Completar escritura diaria' }),
       enabled: true,
     },
   });
@@ -471,6 +471,7 @@ async function main() {
           notes: `Escribí ${pages.toFixed(1)} páginas hoy. ${totalPages.toFixed(1)} páginas en total.`,
           obstacles: i % 5 === 0 ? 'Bloqueo creativo' : null,
           mood: moods[i % 3],
+          checklistCompleted: i % 3 !== 0, // Completado la mayoría de días (ejemplo de checklist)
           metricsData: JSON.stringify({ paginasEscritas: pages, totalPaginas: totalPages }),
         },
       });
@@ -570,7 +571,74 @@ async function main() {
     },
   });
 
-  console.log('✅ Goal 2 (ACTIVA) creada con 5 minitasks (2 completadas, 2 pendientes, 1 draft), 3 checkins, 1 readjustment y 2 sugerencias');
+  // EVENTO ÚNICO: Preparar materiales (multi-item checklist)
+  const mt2_unique = await prisma.miniTask.create({
+    data: {
+      goalId: goal2.id,
+      title: 'Preparar y verificar materiales completos para el primer cuadro antes del inicio',
+      description: 'Reunir y comprobar que el lienzo, pinturas y pinceles estén listos y en buen estado antes del 15 de julio de 2024, marcando cada elemento como preparado en una lista de verificación.',
+      status: 'IN_PROGRESS',
+      deadline: new Date('2024-07-15'),
+      unlocked: true,
+      metricsConfig: JSON.stringify({
+        unlocked: true,
+        unlockedAt: new Date('2024-07-01').toISOString(),
+        plugins: [
+          { id: 'calendar', config: { enabled: true, checklistEnabled: true, checklistType: 'multi-item', checklistLabel: 'Verificar materiales para el primer cuadro', checklistItems: ['Lienzo', 'Pinturas', 'Pinceles', 'Paleta', 'Diluyente'], alarmTimes: ['09:00'] } },
+          { id: 'chart', config: { enabled: true, chartType: 'bar', metricType: 'completitud', timeRange: 'all' } },
+        ],
+      }),
+      createdAt: new Date('2024-07-01'),
+      updatedAt: new Date('2024-07-05'),
+    },
+  });
+
+  await prisma.miniTaskScore.create({
+    data: {
+      miniTaskId: mt2_unique.id,
+      specific: 95,
+      measurable: 90,
+      achievable: 100,
+      relevant: 95,
+      timebound: 85,
+      average: 93,
+      passed: true,
+    },
+  });
+
+  // Plugins para mt2_unique
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt2_unique.id,
+      pluginId: 'calendar',
+      config: JSON.stringify({ enabled: true, checklistEnabled: true, checklistType: 'multi-item', checklistLabel: 'Verificar materiales para el primer cuadro', checklistItems: ['Lienzo', 'Pinturas', 'Pinceles', 'Paleta', 'Diluyente'], alarmTimes: ['09:00'] }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt2_unique.id,
+      pluginId: 'chart',
+      config: JSON.stringify({ enabled: true, chartType: 'bar', metricType: 'completitud', timeRange: 'all' }),
+      enabled: true,
+    },
+  });
+
+  // Crear items del checklist
+  const checklistItems = ['Lienzo', 'Pinturas', 'Pinceles', 'Paleta', 'Diluyente'];
+  for (let i = 0; i < checklistItems.length; i++) {
+    await prisma.miniTaskChecklistItem.create({
+      data: {
+        miniTaskId: mt2_unique.id,
+        label: checklistItems[i],
+        completed: i < 3, // Primeros 3 completados como ejemplo
+        completedAt: i < 3 ? new Date('2024-07-05') : null,
+        order: i,
+      },
+    });
+  }
+
+  console.log('✅ Goal 2 (ACTIVA) creada con 6 minitasks (2 completadas, 3 pendientes incluyendo evento único, 1 draft), 3 checkins, 1 readjustment y 2 sugerencias');
 
   // ============================================
   // GOAL 3: ACTIVA - Otra meta en proceso
@@ -665,10 +733,10 @@ async function main() {
         unlocked: true,
         unlockedAt: new Date('2024-10-20').toISOString(),
         plugins: [
-          { id: 'calendar', config: { enabled: true, frequency: 'weekly', alarmTime: '06:00' } },
+          { id: 'calendar', config: { enabled: true, frequency: 'weekly', alarmTimes: ['06:00', '18:00'], checklistEnabled: false } },
           { id: 'chart', config: { enabled: true, chartType: 'area', metricType: 'kilómetros-corridos', timeRange: 'month' } },
           { id: 'progress-tracker', config: { enabled: true, targetValue: 21, unit: 'km' } },
-          { id: 'reminder', config: { enabled: true, times: ['06:00'] } },
+          { id: 'reminder', config: { enabled: true, reminderTimes: ['06:00'] } },
           { id: 'mobile-push', config: { enabled: true, frequency: 'daily' } },
         ],
       }),
@@ -695,7 +763,7 @@ async function main() {
     data: {
       miniTaskId: mt3_3.id,
       pluginId: 'calendar',
-      config: JSON.stringify({ enabled: true, frequency: 'weekly', alarmTime: '06:00' }),
+      config: JSON.stringify({ enabled: true, frequency: 'weekly', alarmTimes: ['06:00', '18:00'], checklistEnabled: false }),
       enabled: true,
     },
   });
@@ -719,7 +787,7 @@ async function main() {
     data: {
       miniTaskId: mt3_3.id,
       pluginId: 'reminder',
-      config: JSON.stringify({ enabled: true, times: ['06:00'] }),
+      config: JSON.stringify({ enabled: true, reminderTimes: ['06:00'] }),
       enabled: true,
     },
   });
@@ -893,13 +961,15 @@ async function main() {
   console.log('  - 1 Goal COMPLETADA (con score, 3 minitasks completadas, 3 checkins)');
   console.log('  - 2 Goals ACTIVAS (con scores, minitasks mixtas, checkins, readjustments)');
   console.log('  - 2 Goals DRAFT (sin validar)');
-  console.log('  - Total: 5 goals, 16 minitasks, 8 checkins, 1 readjustment, 2 suggested tasks');
-  console.log('  - 3 Minitasks DESBLOQUEADAS con plugins completos:');
+  console.log('  - Total: 5 goals, 17 minitasks, 8 checkins, 1 readjustment, 2 suggested tasks');
+  console.log('  - 4 Minitasks DESBLOQUEADAS con plugins completos:');
   console.log('    * mt1_1: calendar, chart, progress-tracker, reminder (14 días de datos)');
-  console.log('    * mt2_3: calendar, chart, progress-tracker, notification (21 días de datos)');
+  console.log('    * mt2_3: calendar (checklist diario), chart, progress-tracker, notification (21 días de datos)');
+  console.log('    * mt2_unique: calendar (checklist multi-item evento único), chart (evento único)');
   console.log('    * mt3_3: calendar, chart, progress-tracker, reminder, mobile-push (28 días de datos)');
   console.log('  - Entradas del journal con datos variados para visualización');
   console.log('  - Métricas históricas para gráficas en todos los plugins');
+  console.log('  - Checklist multi-item con 5 elementos (3 completados) en mt2_unique');
   console.log('\n🎉 Seed completado exitosamente!');
 }
 

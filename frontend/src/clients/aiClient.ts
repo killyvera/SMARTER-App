@@ -340,14 +340,21 @@ export interface UnlockMiniTaskRequest {
 const UNLOCK_MINITASK_PROMPT = `Eres un experto en metodología SMARTER y gestión de tareas. Tu tarea es analizar una minitask y generar una versión mejorada con métricas específicas y plugins de seguimiento.
 
 Plugins disponibles:
-- calendar: Para tareas con fechas específicas, requiere recordatorios diarios/semanales/mensuales/trimestrales. Genera alarmas y alertas.
+- calendar: Para tareas con fechas específicas, requiere recordatorios diarios/semanales/mensuales/trimestrales. Genera alarmas y alertas. 
+  * Soporta múltiples alarmas al día (alarmTimes: array de horas HH:mm)
+  * Puede incluir checklist diario (checklistEnabled: true) con etiqueta personalizada (checklistLabel)
+  * El checklist es ideal para tareas que se completan con una acción simple (ej: "Lavar trastes", "Tomar medicamento", "Completar escritura diaria")
+  * Para tareas repetitivas diarias, activa checklistEnabled con una etiqueta descriptiva
+  * Para tareas que requieren múltiples acciones al día, configura múltiples alarmas (ej: medicamentos 2 veces al día)
 - reminder: Para tareas que necesitan recordatorios en momentos específicos del día
+  * Soporta múltiples horas de recordatorio (reminderTimes: array de horas HH:mm)
+  * Útil para recordatorios sin seguimiento de progreso numérico
 - progress-tracker: Para tareas con progreso numérico medible (horas, páginas, items, etc.) con seguimiento diario/semanal/mensual
-- checklist: Para tareas con pasos específicos
+- checklist: Para tareas con pasos específicos (NOTA: El checklist diario está integrado en calendar, usa calendar con checklistEnabled)
 - timer: Para tareas con duración específica
 - notification: Para alertas del navegador (home)
 - mobile-push: Para notificaciones push móviles (dispositivo)
-- chart: Para visualizar progreso con gráficas de barras, líneas, etc. usando QuickChart.js
+- chart: Para visualizar progreso con gráficas de barras, líneas, etc. usando Recharts
 
 IMPORTANTE - Plugins obligatorios:
 - SIEMPRE debes incluir "calendar" (para alarmas y seguimiento temporal)
@@ -357,12 +364,49 @@ IMPORTANTE - Plugins obligatorios:
 Analiza la minitask y:
 1. Mejora el título y descripción para que sea más específica y medible
 2. Identifica qué métricas son apropiadas para medir el progreso (diario, semanal, mensual, trimestral)
-3. Selecciona los plugins (MÍNIMO 2, típicamente 3-4):
-   - OBLIGATORIO: calendar (con frecuencia diaria/semanal/mensual según la tarea)
+3. Determina si la tarea es un EVENTO ÚNICO o TAREA REPETITIVA:
+   
+   EVENTOS ÚNICOS (se completan una vez):
+   - Tareas que se realizan una sola vez antes de una fecha límite (ej: "Preparar materiales", "Verificar documentos", "Configurar equipo")
+   - Para eventos únicos simples (un solo elemento): checklistType: 'single', checklistEnabled: true, NO usar frequency: 'daily'
+   - Para eventos únicos con múltiples elementos: checklistType: 'multi-item', checklistEnabled: true, checklistItems: ["Elemento 1", "Elemento 2", ...], NO usar frequency: 'daily'
+   - Ejemplos:
+     * "Preparar materiales para el primer cuadro" → checklistType: 'multi-item', checklistItems: ["Lienzo", "Pinturas", "Pinceles", "Paleta"]
+     * "Apagar la luz" → checklistType: 'single', checklistLabel: "Apagar la luz"
+   
+   TAREAS REPETITIVAS DIARIAS (se repiten cada día):
+   - Tareas que se realizan diariamente y requieren confirmación cada día (ej: "Lavar trastes", "Tomar medicamento", "Hacer ejercicio")
+   - Para tareas diarias: checklistType: 'daily', checklistEnabled: true, frequency: 'daily', checklistLabel temático
+   - Si requiere múltiples acciones al día: configura múltiples alarmas en alarmTimes (ej: ['08:00', '20:00'])
+   - El checklistLabel debe ser temático y descriptivo (ej: "Lavar trastes", "Completar escritura diaria", NO usar ejemplos genéricos)
+   
+   IMPORTANTE:
+   - Tareas con progreso medible numéricamente (horas, páginas, items) → usa progress-tracker en lugar de checklist
+   - Eventos únicos NUNCA deben tener frequency: 'daily', solo usan deadline
+   - Tareas diarias SIEMPRE deben tener frequency: 'daily' y checklistType: 'daily'
+4. Selecciona los plugins (MÍNIMO 2, típicamente 3-4):
+   - OBLIGATORIO: calendar
+     * Para EVENTOS ÚNICOS:
+       - checklistType: 'single' (un elemento) o 'multi-item' (múltiples elementos)
+       - checklistEnabled: true
+       - checklistItems: array de strings si es 'multi-item' (ej: ["Lienzo", "Pinturas"])
+       - checklistLabel: etiqueta descriptiva
+       - NO usar frequency: 'daily', solo deadline
+     * Para TAREAS DIARIAS:
+       - checklistType: 'daily'
+       - checklistEnabled: true
+       - frequency: 'daily'
+       - checklistLabel: etiqueta temática
+       - alarmTimes: array de horas si requiere múltiples alarmas
+     * Para tareas sin checklist: solo alarmas, sin checklistEnabled
    - OBLIGATORIO: chart (para gráficas de progreso)
-   - ADICIONAL: reminder, progress-tracker, notification, etc. según corresponda
-4. Configura cada plugin con parámetros apropiados (frecuencia, alarmas, tipos de seguimiento)
-5. Realiza un análisis SMARTER completo
+   - ADICIONAL: reminder (si necesita recordatorios adicionales), progress-tracker (si hay progreso numérico), notification, etc.
+5. Configura cada plugin con parámetros apropiados:
+   - calendar: frequency, alarmTimes (array), checklistEnabled (boolean), checklistLabel (string opcional)
+   - reminder: reminderTimes (array de horas HH:mm)
+   - progress-tracker: targetValue, unit
+   - chart: chartType, metricType, timeRange
+6. Realiza un análisis SMARTER completo
 
 Responde SOLO con un JSON válido en este formato exacto:
 {
@@ -383,7 +427,16 @@ Responde SOLO con un JSON válido en este formato exacto:
       "config": {
         "enabled": true,
         "frequency": "<daily|weekly|monthly|custom>",
-        // ... otros campos específicos del plugin
+        // Para calendar: 
+        //   - alarmTimes (array de horas HH:mm)
+        //   - checklistEnabled (boolean)
+        //   - checklistType ("single"|"daily"|"multi-item")
+        //   - checklistLabel (string opcional, temático a la tarea)
+        //   - checklistItems (array de strings, solo para "multi-item")
+        //   - IMPORTANTE: eventos únicos NO deben tener frequency: "daily"
+        // Para reminder: reminderTimes (array de horas HH:mm)
+        // Para progress-tracker: targetValue (number), unit (string)
+        // Para chart: chartType (bar|line|pie|area), metricType (string), timeRange (day|week|month|all)
       }
     }
   ],
@@ -451,6 +504,58 @@ ${request.goalContext.description ? `Descripción: ${request.goalContext.descrip
       if (!validPluginIds.includes(plugin.id)) {
         throw new Error(`Plugin ID inválido: ${plugin.id}`);
       }
+      
+      // Migrar alarmTime a alarmTimes para calendar plugins
+      if (plugin.id === 'calendar' && plugin.config) {
+        if (plugin.config.alarmTime && !plugin.config.alarmTimes) {
+          plugin.config.alarmTimes = [plugin.config.alarmTime];
+          delete plugin.config.alarmTime;
+        }
+        
+        // Validar y corregir configuración de checklist
+        if (plugin.config.checklistEnabled) {
+          // Si no tiene checklistType, inferirlo
+          if (!plugin.config.checklistType) {
+            if (plugin.config.checklistItems && plugin.config.checklistItems.length > 0) {
+              plugin.config.checklistType = 'multi-item';
+            } else if (plugin.config.frequency === 'daily') {
+              plugin.config.checklistType = 'daily';
+            } else {
+              plugin.config.checklistType = 'single';
+            }
+          }
+          
+          // Para eventos únicos, asegurar que NO tenga frequency 'daily'
+          if ((plugin.config.checklistType === 'single' || plugin.config.checklistType === 'multi-item') && plugin.config.frequency === 'daily') {
+            console.warn('⚠️ [UNLOCK] Evento único con frequency daily, removiendo frequency');
+            delete plugin.config.frequency;
+          }
+          
+          // Si tiene checklistItems pero checklistType no es 'multi-item', corregirlo
+          if (plugin.config.checklistItems && plugin.config.checklistItems.length > 0 && plugin.config.checklistType !== 'multi-item') {
+            console.warn('⚠️ [UNLOCK] checklistItems presente pero checklistType incorrecto, corrigiendo a multi-item');
+            plugin.config.checklistType = 'multi-item';
+          }
+          
+          // Si tiene checklistLabel pero no checklistItems y es single, está bien
+          // Si no tiene checklistLabel, agregar uno genérico
+          if (!plugin.config.checklistLabel) {
+            if (plugin.config.checklistType === 'multi-item') {
+              plugin.config.checklistLabel = 'Completar elementos';
+            } else {
+              plugin.config.checklistLabel = 'Completar tarea';
+            }
+          }
+        }
+      }
+      
+      // Migrar times a reminderTimes para reminder plugins
+      if (plugin.id === 'reminder' && plugin.config) {
+        if (plugin.config.times && !plugin.config.reminderTimes) {
+          plugin.config.reminderTimes = plugin.config.times;
+          delete plugin.config.times;
+        }
+      }
     }
 
     // Asegurar que siempre haya al menos calendar y chart
@@ -463,7 +568,8 @@ ${request.goalContext.description ? `Descripción: ${request.goalContext.descrip
         config: {
           enabled: true,
           frequency: 'daily',
-          alarmTime: '09:00',
+          alarmTimes: ['09:00'],
+          checklistEnabled: false,
         },
       });
     }

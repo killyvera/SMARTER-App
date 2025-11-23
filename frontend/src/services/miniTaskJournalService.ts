@@ -10,6 +10,7 @@ import {
 import { findMiniTaskById } from '@/repositories/miniTaskRepository';
 import { queryMiniTaskCoach, type MiniTaskCoachContext } from '@/clients/aiClient';
 import { createMiniTaskMetric } from '@/repositories/miniTaskRepository';
+import { startOfDay } from 'date-fns';
 import type { CreateMiniTaskJournalEntryInput, UpdateMiniTaskJournalEntryInput } from '@/types/miniTaskJournal';
 
 export async function createMiniTaskJournalEntryService(
@@ -29,7 +30,28 @@ export async function createMiniTaskJournalEntryService(
   }
   
   // Verificar si ya existe una entrada para esta fecha
-  const entryDate = input.entryDate ? new Date(input.entryDate) : new Date();
+  // Normalizar la fecha al inicio del día para evitar problemas de zona horaria
+  let entryDate: Date;
+  if (input.entryDate) {
+    // Si es un Date object, usarlo directamente
+    if (input.entryDate instanceof Date) {
+      entryDate = new Date(input.entryDate);
+    } else if (typeof input.entryDate === 'string') {
+      // Si es un string de fecha (YYYY-MM-DD), crear la fecha en zona horaria local
+      // para evitar que se interprete como UTC y cambie el día
+      const dateStr = input.entryDate.split('T')[0]; // Solo la parte de fecha
+      const [year, month, day] = dateStr.split('-').map(Number);
+      entryDate = new Date(year, month - 1, day);
+    } else {
+      entryDate = new Date(input.entryDate);
+    }
+  } else {
+    entryDate = new Date();
+  }
+  
+  // Normalizar al inicio del día usando startOfDay de date-fns
+  entryDate = startOfDay(entryDate);
+  
   const existingEntry = await findMiniTaskJournalEntryByDate(miniTaskId, entryDate);
   
   if (existingEntry) {
@@ -41,6 +63,7 @@ export async function createMiniTaskJournalEntryService(
       obstacles: input.obstacles,
       mood: input.mood,
       timeSpent: input.timeSpent,
+      checklistCompleted: input.checklistCompleted,
       metricsData: input.metricsData,
     });
   }
@@ -54,6 +77,7 @@ export async function createMiniTaskJournalEntryService(
     obstacles: input.obstacles,
     mood: input.mood,
     timeSpent: input.timeSpent,
+    checklistCompleted: input.checklistCompleted,
     metricsData: input.metricsData,
   });
   

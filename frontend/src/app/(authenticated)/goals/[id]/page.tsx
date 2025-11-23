@@ -6,7 +6,7 @@ import { useGoal, useValidateGoal, useConfirmGoalValidation, useActivateGoal } f
 import { SmarterScoreDisplay } from '@/features/goals/components/SmarterScoreDisplay';
 import { ValidationReview } from '@/features/goals/components/ValidationReview';
 import { CheckInHistory } from '@/features/checkins/components/CheckInHistory';
-import { useMiniTasks } from '@/features/minitasks/hooks/useMiniTasks';
+import { useMiniTasks, useUnlockMiniTask } from '@/features/minitasks/hooks/useMiniTasks';
 import { MiniTaskCard } from '@/features/minitasks/components/MiniTaskCard';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -23,7 +23,8 @@ export default function GoalDetailPage() {
   const validateGoal = useValidateGoal();
   const confirmValidation = useConfirmGoalValidation();
   const activateGoal = useActivateGoal();
-  const { data: miniTasks } = useMiniTasks({ goalId: id });
+  const { data: miniTasks, refetch: refetchMiniTasks } = useMiniTasks({ goalId: id });
+  const unlockMiniTask = useUnlockMiniTask();
 
   const [validationState, setValidationState] = useState<ValidationState>('idle');
   const [validationData, setValidationData] = useState<{
@@ -41,30 +42,44 @@ export default function GoalDetailPage() {
       setValidationState('validating');
       const result = await validateGoal.mutateAsync(id);
       
+      console.log('🔍 [GOAL VALIDATION] Resultado de validación:', {
+        hasScore: !!result.score,
+        hasSuggestedTitle: !!result.suggestedTitle,
+        hasSuggestedDescription: !!result.suggestedDescription,
+        suggestedMiniTasksLength: result.suggestedMiniTasks?.length || 0,
+        hasPreviewScores: !!result.previewScores,
+        hasFeedback: !!result.feedback,
+        result: result,
+      });
+      
       // Si hay score, ya fue validado previamente
       if (result.score) {
+        console.log('✅ [GOAL VALIDATION] Goal ya validado previamente, no hay sugerencias');
         setValidationState('idle');
         return;
       }
       
-      // Si hay sugerencias, mostrar pantalla de revisión
-      if (result.suggestedTitle || result.suggestedDescription || (result.suggestedMiniTasks && result.suggestedMiniTasks.length > 0)) {
+      // SIEMPRE mostrar pantalla de revisión si hay previewScores (primera validación)
+      // Esto permite al usuario ver el feedback y las sugerencias (si las hay)
+      if (result.previewScores) {
+        console.log('📋 [GOAL VALIDATION] Mostrando pantalla de revisión con sugerencias');
         setValidationData({
-          suggestedTitle: result.suggestedTitle,
-          suggestedDescription: result.suggestedDescription,
+          suggestedTitle: result.suggestedTitle || null,
+          suggestedDescription: result.suggestedDescription || null,
           suggestedMiniTasks: result.suggestedMiniTasks || [],
-          previewScores: result.previewScores!,
+          previewScores: result.previewScores,
           previewAverage: result.previewAverage!,
           previewPassed: result.previewPassed!,
           feedback: result.feedback,
         });
         setValidationState('reviewing');
       } else {
-        // No hay sugerencias, validar directamente
+        // No hay previewScores, algo salió mal
+        console.warn('⚠️ [GOAL VALIDATION] No hay previewScores en el resultado');
         setValidationState('idle');
       }
     } catch (error) {
-      console.error('Error al validar goal:', error);
+      console.error('❌ [GOAL VALIDATION] Error al validar goal:', error);
       setValidationState('idle');
     }
   };
@@ -75,7 +90,8 @@ export default function GoalDetailPage() {
     miniTasks: Array<{ title: string; description?: string; priority: number }>;
   }) => {
     try {
-      console.log('handleConfirmValidation - Datos recibidos:', {
+      console.log('✅ [GOAL VALIDATION] Confirmando validación con minitasks:', {
+        goalId: id,
         title: data.title,
         description: data.description,
         miniTasksCount: data.miniTasks.length,
@@ -90,12 +106,36 @@ export default function GoalDetailPage() {
         acceptedMiniTasks: data.miniTasks,
       });
       
-      console.log('handleConfirmValidation - Resultado:', result);
+      console.log('✅ [GOAL VALIDATION] Validación confirmada exitosamente:', {
+        goalId: id,
+        hasScore: !!result.score,
+        suggestedMiniTasksCount: result.suggestedMiniTasks?.length || 0,
+      });
+      
+      // Las queries se invalidan automáticamente en el hook, pero forzamos un refetch
+      // para asegurar que las minitasks aparezcan inmediatamente
+      console.log('🔄 [GOAL VALIDATION] Esperando actualización de minitasks...');
       
       setValidationState('idle');
       setValidationData(null);
+      
+      // Forzar refetch de minitasks después de un pequeño delay para asegurar que el servidor haya guardado
+      setTimeout(async () => {
+        console.log('🔄 [GOAL VALIDATION] Forzando refetch de minitasks...');
+        try {
+          await refetchMiniTasks();
+          console.log('✅ [GOAL VALIDATION] Minitasks actualizadas:', {
+            count: miniTasks?.length || 0,
+          });
+        } catch (error) {
+          console.error('❌ [GOAL VALIDATION] Error al refetch minitasks:', error);
+        }
+      }, 800);
     } catch (error) {
-      console.error('Error al confirmar validación:', error);
+      console.error('❌ [GOAL VALIDATION] Error al confirmar validación:', {
+        goalId: id,
+        error: error instanceof Error ? error.message : String(error),
+      });
       setValidationState('reviewing');
     }
   };
@@ -214,7 +254,13 @@ export default function GoalDetailPage() {
             <div className="space-y-2">
               {miniTasks && miniTasks.length > 0 ? (
                 miniTasks.map((task) => (
-                  <MiniTaskCard key={task.id} miniTask={task} />
+                  <MiniTaskCard
+                    key={task.id}
+                    miniTask={task}
+                    onUnlock={async (id) => {
+                      await unlockMiniTask.mutateAsync(id);
+                    }}
+                  />
                 ))
               ) : (
                 <p className="text-sm text-muted-foreground">

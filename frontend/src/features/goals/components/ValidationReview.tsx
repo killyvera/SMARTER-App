@@ -136,14 +136,41 @@ export function ValidationReview({
         </CardContent>
       </Card>
 
-      <TitleDescriptionComparison
-        currentTitle={currentTitle}
-        currentDescription={currentDescription}
-        suggestedTitle={suggestedTitle}
-        suggestedDescription={suggestedDescription}
-        onAccept={handleTitleDescriptionAccept}
-        onReject={handleTitleDescriptionReject}
-      />
+      {(suggestedTitle || suggestedDescription) && (
+        <TitleDescriptionComparison
+          currentTitle={currentTitle}
+          currentDescription={currentDescription}
+          suggestedTitle={suggestedTitle}
+          suggestedDescription={suggestedDescription}
+          onAccept={handleTitleDescriptionAccept}
+          onReject={handleTitleDescriptionReject}
+        />
+      )}
+      
+      {!suggestedTitle && !suggestedDescription && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Título y Descripción</CardTitle>
+            <CardDescription>
+              El título y descripción actuales son óptimos según la IA
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Título:</p>
+                <p className="font-medium">{currentTitle}</p>
+              </div>
+              {currentDescription && (
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">Descripción:</p>
+                  <p className="text-sm">{currentDescription}</p>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {suggestedMiniTasks.length > 0 && (
         <Card>

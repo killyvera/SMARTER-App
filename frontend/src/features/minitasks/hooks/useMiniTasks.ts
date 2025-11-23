@@ -68,13 +68,59 @@ export function useValidateMiniTask() {
   const queryClient = useQueryClient();
 
   return useMutation({
+    mutationFn: async (id: string) => {
+      console.log('🔵 [VALIDATE MINITASK] Iniciando validación:', { miniTaskId: id });
+      try {
+        const result = await apiRequest<{ score: any; feedback: string; passed: boolean; isAction?: boolean }>(
+          `/minitasks/${id}/validate`,
+          {
+            method: 'POST',
+          }
+        );
+        console.log('✅ [VALIDATE MINITASK] Validación exitosa:', {
+          miniTaskId: id,
+          hasScore: !!result.score,
+          passed: result.passed,
+          feedback: result.feedback,
+        });
+        return result;
+      } catch (error) {
+        console.error('❌ [VALIDATE MINITASK] Error en validación:', {
+          miniTaskId: id,
+          error: error instanceof Error ? error.message : String(error),
+          errorObject: error,
+        });
+        throw error;
+      }
+    },
+    onSuccess: (_, id) => {
+      console.log('🔄 [VALIDATE MINITASK] Invalidando queries después de validación:', { miniTaskId: id });
+      queryClient.invalidateQueries({ queryKey: ['minitasks', id] });
+      queryClient.invalidateQueries({ queryKey: ['minitasks'] });
+    },
+    onError: (error, id) => {
+      console.error('❌ [VALIDATE MINITASK] Error en mutation:', {
+        miniTaskId: id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    },
+  });
+}
+
+export function useUnlockMiniTask() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
     mutationFn: (id: string) =>
-      apiRequest<{ score: any; feedback: string; passed: boolean }>(
-        `/minitasks/${id}/validate`,
-        {
-          method: 'POST',
-        }
-      ),
+      apiRequest<{
+        improvedTitle: string;
+        improvedDescription?: string;
+        metrics: any[];
+        plugins: any[];
+        smarterAnalysis: any;
+      }>(`/minitasks/${id}/unlock`, {
+        method: 'POST',
+      }),
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['minitasks', id] });
       queryClient.invalidateQueries({ queryKey: ['minitasks'] });

@@ -8,6 +8,22 @@ async function main() {
   console.log('🗑️  Limpiando base de datos...');
 
   // Limpiar TODA la base de datos en orden correcto (respetando foreign keys)
+  // Usar try-catch para manejar tablas que pueden no existir aún
+  try {
+    await prisma.miniTaskJournalEntry.deleteMany({});
+  } catch (e: any) {
+    if (e.code !== 'P2021') throw e; // P2021 = tabla no existe
+  }
+  try {
+    await prisma.miniTaskMetric.deleteMany({});
+  } catch (e: any) {
+    if (e.code !== 'P2021') throw e;
+  }
+  try {
+    await prisma.miniTaskPlugin.deleteMany({});
+  } catch (e: any) {
+    if (e.code !== 'P2021') throw e;
+  }
   await prisma.suggestedMiniTask.deleteMany({});
   await prisma.readjustment.deleteMany({});
   await prisma.checkIn.deleteMany({});
@@ -63,7 +79,7 @@ async function main() {
     },
   });
 
-  // Minitasks completadas para goal1
+  // Minitasks completadas para goal1 - DESBLOQUEADA CON PLUGINS Y JOURNAL
   const mt1_1 = await prisma.miniTask.create({
     data: {
       goalId: goal1.id,
@@ -71,6 +87,17 @@ async function main() {
       description: 'Terminar todos los ejercicios y proyectos del módulo básico',
       status: 'COMPLETED',
       deadline: new Date('2024-02-28'),
+      unlocked: true,
+      metricsConfig: JSON.stringify({
+        unlocked: true,
+        unlockedAt: new Date('2024-01-20').toISOString(),
+        plugins: [
+          { id: 'calendar', config: { enabled: true, frequency: 'daily', alarmTime: '09:00' } },
+          { id: 'chart', config: { enabled: true, chartType: 'line', metricType: 'horas-estudiadas', timeRange: 'week' } },
+          { id: 'progress-tracker', config: { enabled: true, targetValue: 40, unit: 'horas' } },
+          { id: 'reminder', config: { enabled: true, times: ['09:00', '18:00'] } },
+        ],
+      }),
       createdAt: new Date('2024-01-20'),
       updatedAt: new Date('2024-02-25'),
     },
@@ -88,6 +115,87 @@ async function main() {
       passed: true,
     },
   });
+
+  // Plugins para mt1_1
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt1_1.id,
+      pluginId: 'calendar',
+      config: JSON.stringify({ enabled: true, frequency: 'daily', alarmTime: '09:00' }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt1_1.id,
+      pluginId: 'chart',
+      config: JSON.stringify({ enabled: true, chartType: 'line', metricType: 'horas-estudiadas', timeRange: 'week' }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt1_1.id,
+      pluginId: 'progress-tracker',
+      config: JSON.stringify({ enabled: true, targetValue: 40, unit: 'horas' }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt1_1.id,
+      pluginId: 'reminder',
+      config: JSON.stringify({ enabled: true, times: ['09:00', '18:00'] }),
+      enabled: true,
+    },
+  });
+
+  // Métricas históricas para mt1_1 (últimas 2 semanas - fechas recientes)
+  const today = new Date();
+  const baseDate1 = new Date(today);
+  baseDate1.setDate(baseDate1.getDate() - 14); // Hace 14 días
+  
+  for (let i = 0; i < 14; i++) {
+    const date = new Date(baseDate1);
+    date.setDate(date.getDate() + i);
+    date.setHours(9, 0, 0, 0); // Normalizar hora
+    const hours = 1.5 + Math.random() * 2.5; // Entre 1.5 y 4 horas
+    await prisma.miniTaskMetric.create({
+      data: {
+        miniTaskId: mt1_1.id,
+        pluginId: 'progress-tracker',
+        metricType: 'progress',
+        value: JSON.stringify(hours),
+        metadata: JSON.stringify({ unit: 'horas', entryDate: date.toISOString() }),
+        recordedAt: date,
+      },
+    });
+  }
+
+  // Entradas del journal para mt1_1
+  for (let i = 0; i < 14; i++) {
+    const date = new Date(baseDate1);
+    date.setDate(date.getDate() + i);
+    date.setHours(0, 0, 0, 0); // Normalizar a inicio del día
+    const hours = 1.5 + Math.random() * 2.5;
+    const moods = ['positivo', 'neutral', 'negativo'];
+    const obstacles = i % 3 === 0 ? 'Falta de tiempo, Distracciones' : null;
+    
+    await prisma.miniTaskJournalEntry.create({
+      data: {
+        miniTaskId: mt1_1.id,
+        entryDate: date,
+        progressValue: hours,
+        progressUnit: 'horas',
+        timeSpent: Math.round(hours * 60),
+        notes: i % 2 === 0 ? `Estudié ${hours.toFixed(1)} horas hoy. ${i % 3 === 0 ? 'Fue un día productivo.' : 'Avancé bien con los ejercicios.'}` : null,
+        obstacles: obstacles,
+        mood: moods[i % 3],
+        metricsData: JSON.stringify({ horasEstudiadas: hours, ejerciciosCompletados: Math.floor(hours * 2) }),
+      },
+    });
+  }
+  console.log('  ✅ mt1_1: 4 plugins, 14 métricas, 14 entradas journal');
 
   const mt1_2 = await prisma.miniTask.create({
     data: {
@@ -264,6 +372,17 @@ async function main() {
       description: 'Desarrollar el capítulo sobre gestión del tiempo',
       status: 'PENDING',
       deadline: new Date('2024-12-15'),
+      unlocked: true,
+      metricsConfig: JSON.stringify({
+        unlocked: true,
+        unlockedAt: new Date('2024-10-20').toISOString(),
+        plugins: [
+          { id: 'calendar', config: { enabled: true, frequency: 'daily', alarmTime: '08:00' } },
+          { id: 'chart', config: { enabled: true, chartType: 'bar', metricType: 'páginas-escritas', timeRange: 'week' } },
+          { id: 'progress-tracker', config: { enabled: true, targetValue: 25, unit: 'páginas' } },
+          { id: 'notification', config: { enabled: true, frequency: 'daily' } },
+        ],
+      }),
       createdAt: new Date('2024-10-20'),
       updatedAt: new Date('2024-11-01'),
     },
@@ -281,6 +400,83 @@ async function main() {
       passed: true,
     },
   });
+
+  // Plugins para mt2_3
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt2_3.id,
+      pluginId: 'calendar',
+      config: JSON.stringify({ enabled: true, frequency: 'daily', alarmTime: '08:00' }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt2_3.id,
+      pluginId: 'chart',
+      config: JSON.stringify({ enabled: true, chartType: 'bar', metricType: 'páginas-escritas', timeRange: 'week' }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt2_3.id,
+      pluginId: 'progress-tracker',
+      config: JSON.stringify({ enabled: true, targetValue: 25, unit: 'páginas' }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt2_3.id,
+      pluginId: 'notification',
+      config: JSON.stringify({ enabled: true, frequency: 'daily' }),
+      enabled: true,
+    },
+  });
+
+  // Métricas y journal para mt2_3 (últimas 3 semanas - fechas recientes)
+  const baseDate2 = new Date(today);
+  baseDate2.setDate(baseDate2.getDate() - 21); // Hace 21 días
+  
+  for (let i = 0; i < 21; i++) {
+    const date = new Date(baseDate2);
+    date.setDate(date.getDate() + i);
+    date.setHours(8, 0, 0, 0); // Normalizar hora
+    const pages = i < 7 ? 0.5 + Math.random() * 1.5 : 1 + Math.random() * 2; // Más páginas después de la primera semana
+    const totalPages = Math.min(25, pages * (i + 1) / 21 * 25);
+    
+    await prisma.miniTaskMetric.create({
+      data: {
+        miniTaskId: mt2_3.id,
+        pluginId: 'progress-tracker',
+        metricType: 'progress',
+        value: JSON.stringify(pages),
+        metadata: JSON.stringify({ unit: 'páginas', entryDate: date.toISOString() }),
+        recordedAt: date,
+      },
+    });
+
+    if (i % 2 === 0) { // Entradas cada 2 días
+      const dateEntry = new Date(date);
+      dateEntry.setHours(0, 0, 0, 0);
+      const moods = ['positivo', 'neutral', 'negativo'];
+      await prisma.miniTaskJournalEntry.create({
+        data: {
+          miniTaskId: mt2_3.id,
+          entryDate: dateEntry,
+          progressValue: pages,
+          progressUnit: 'páginas',
+          timeSpent: Math.round(pages * 45), // 45 min por página
+          notes: `Escribí ${pages.toFixed(1)} páginas hoy. ${totalPages.toFixed(1)} páginas en total.`,
+          obstacles: i % 5 === 0 ? 'Bloqueo creativo' : null,
+          mood: moods[i % 3],
+          metricsData: JSON.stringify({ paginasEscritas: pages, totalPaginas: totalPages }),
+        },
+      });
+    }
+  }
+  console.log('  ✅ mt2_3: 4 plugins, 21 métricas, 11 entradas journal');
 
   const mt2_4 = await prisma.miniTask.create({
     data: {
@@ -464,6 +660,18 @@ async function main() {
       description: 'Completar una media maratón como preparación',
       status: 'PENDING',
       deadline: new Date('2025-01-31'),
+      unlocked: true,
+      metricsConfig: JSON.stringify({
+        unlocked: true,
+        unlockedAt: new Date('2024-10-20').toISOString(),
+        plugins: [
+          { id: 'calendar', config: { enabled: true, frequency: 'weekly', alarmTime: '06:00' } },
+          { id: 'chart', config: { enabled: true, chartType: 'area', metricType: 'kilómetros-corridos', timeRange: 'month' } },
+          { id: 'progress-tracker', config: { enabled: true, targetValue: 21, unit: 'km' } },
+          { id: 'reminder', config: { enabled: true, times: ['06:00'] } },
+          { id: 'mobile-push', config: { enabled: true, frequency: 'daily' } },
+        ],
+      }),
       createdAt: new Date('2024-10-20'),
       updatedAt: new Date('2024-11-01'),
     },
@@ -481,6 +689,92 @@ async function main() {
       passed: true,
     },
   });
+
+  // Plugins para mt3_3
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt3_3.id,
+      pluginId: 'calendar',
+      config: JSON.stringify({ enabled: true, frequency: 'weekly', alarmTime: '06:00' }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt3_3.id,
+      pluginId: 'chart',
+      config: JSON.stringify({ enabled: true, chartType: 'area', metricType: 'kilómetros-corridos', timeRange: 'month' }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt3_3.id,
+      pluginId: 'progress-tracker',
+      config: JSON.stringify({ enabled: true, targetValue: 21, unit: 'km' }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt3_3.id,
+      pluginId: 'reminder',
+      config: JSON.stringify({ enabled: true, times: ['06:00'] }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt3_3.id,
+      pluginId: 'mobile-push',
+      config: JSON.stringify({ enabled: true, frequency: 'daily' }),
+      enabled: true,
+    },
+  });
+
+  // Métricas y journal para mt3_3 (últimas 4 semanas - fechas recientes, entrenamiento progresivo)
+  const baseDate3 = new Date(today);
+  baseDate3.setDate(baseDate3.getDate() - 28); // Hace 28 días
+  
+  for (let i = 0; i < 28; i++) {
+    const date = new Date(baseDate3);
+    date.setDate(date.getDate() + i);
+    date.setHours(6, 0, 0, 0); // Normalizar hora
+    // Progresión: empezar con 5km, llegar a 15km
+    const km = 5 + (i / 28) * 10 + (Math.random() - 0.5) * 2;
+    const clampedKm = Math.max(3, Math.min(15, km));
+    
+    if (i % 2 === 0) { // Entrenamientos cada 2 días
+      await prisma.miniTaskMetric.create({
+        data: {
+          miniTaskId: mt3_3.id,
+          pluginId: 'progress-tracker',
+          metricType: 'progress',
+          value: JSON.stringify(clampedKm),
+          metadata: JSON.stringify({ unit: 'km', entryDate: date.toISOString() }),
+          recordedAt: date,
+        },
+      });
+
+      const dateEntry = new Date(date);
+      dateEntry.setHours(0, 0, 0, 0);
+      const moods = ['positivo', 'neutral', 'negativo'];
+      await prisma.miniTaskJournalEntry.create({
+        data: {
+          miniTaskId: mt3_3.id,
+          entryDate: dateEntry,
+          progressValue: clampedKm,
+          progressUnit: 'km',
+          timeSpent: Math.round(clampedKm * 6), // 6 min/km promedio
+          notes: `Corrí ${clampedKm.toFixed(1)} km hoy. ${i < 7 ? 'Primera semana, me siento bien.' : i < 14 ? 'Aumentando distancia gradualmente.' : 'Buen progreso, llegando a distancias más largas.'}`,
+          obstacles: i % 7 === 0 ? 'Cansancio' : null,
+          mood: moods[i % 3],
+          metricsData: JSON.stringify({ kilometrosCorridos: clampedKm, tiempoTotal: Math.round(clampedKm * 6) }),
+        },
+      });
+    }
+  }
+  console.log('  ✅ mt3_3: 5 plugins, 14 métricas, 14 entradas journal');
 
   const mt3_4 = await prisma.miniTask.create({
     data: {
@@ -600,6 +894,12 @@ async function main() {
   console.log('  - 2 Goals ACTIVAS (con scores, minitasks mixtas, checkins, readjustments)');
   console.log('  - 2 Goals DRAFT (sin validar)');
   console.log('  - Total: 5 goals, 16 minitasks, 8 checkins, 1 readjustment, 2 suggested tasks');
+  console.log('  - 3 Minitasks DESBLOQUEADAS con plugins completos:');
+  console.log('    * mt1_1: calendar, chart, progress-tracker, reminder (14 días de datos)');
+  console.log('    * mt2_3: calendar, chart, progress-tracker, notification (21 días de datos)');
+  console.log('    * mt3_3: calendar, chart, progress-tracker, reminder, mobile-push (28 días de datos)');
+  console.log('  - Entradas del journal con datos variados para visualización');
+  console.log('  - Métricas históricas para gráficas en todos los plugins');
   console.log('\n🎉 Seed completado exitosamente!');
 }
 

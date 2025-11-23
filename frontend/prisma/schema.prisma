@@ -59,20 +59,26 @@ model SmarterScore {
 }
 
 model MiniTask {
-  id          String   @id @default(cuid())
-  goalId      String
-  title       String
-  description String?
-  status      String   @default("DRAFT")
-  deadline    DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id           String   @id @default(cuid())
+  goalId       String
+  title        String
+  description  String?
+  status       String   @default("DRAFT")
+  deadline     DateTime?
+  unlocked     Boolean  @default(false)
+  metricsConfig String? // JSON string con configuración de plugins y métricas
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  goal  Goal            @relation(fields: [goalId], references: [id], onDelete: Cascade)
-  score MiniTaskScore?
+  goal         Goal            @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  score        MiniTaskScore?
+  metrics      MiniTaskMetric[]
+  plugins      MiniTaskPlugin[]
+  journalEntries MiniTaskJournalEntry[]
 
   @@index([goalId])
   @@index([status])
+  @@index([unlocked])
 }
 
 model MiniTaskScore {
@@ -129,5 +135,61 @@ model SuggestedMiniTask {
   goal Goal @relation(fields: [goalId], references: [id], onDelete: Cascade)
 
   @@index([goalId])
+}
+
+model MiniTaskMetric {
+  id          String   @id @default(cuid())
+  miniTaskId  String
+  pluginId    String   // ID del plugin que generó esta métrica
+  metricType  String   // Tipo de métrica (e.g., "progress", "completion", "time")
+  value       String   // Valor de la métrica (JSON string para flexibilidad)
+  metadata    String?  // Metadata adicional (JSON string)
+  recordedAt  DateTime @default(now())
+
+  miniTask MiniTask @relation(fields: [miniTaskId], references: [id], onDelete: Cascade)
+
+  @@index([miniTaskId])
+  @@index([pluginId])
+  @@index([recordedAt])
+}
+
+model MiniTaskPlugin {
+  id          String   @id @default(cuid())
+  miniTaskId  String
+  pluginId    String   // ID del plugin (e.g., "calendar", "reminder", "progress-tracker")
+  config      String   // Configuración del plugin (JSON string)
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  miniTask MiniTask @relation(fields: [miniTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([miniTaskId, pluginId])
+  @@index([miniTaskId])
+  @@index([pluginId])
+}
+
+model MiniTaskJournalEntry {
+  id              String   @id @default(cuid())
+  miniTaskId      String
+  entryDate       DateTime // Fecha de la entrada (una entrada por día)
+  progressValue   Float?   // Valor numérico de progreso
+  progressUnit    String?  // Unidad: horas, páginas, items, porcentaje, etc.
+  notes           String?  // Notas libres del usuario
+  obstacles       String?  // Obstáculos encontrados
+  mood            String?  // Estado de ánimo: positivo, neutral, negativo
+  timeSpent       Int?     // Minutos dedicados
+  metricsData     String?  // JSON con datos específicos de métricas configuradas
+  coachQuery      String?  // Pregunta al agente coach
+  coachResponse   String?  // Respuesta del agente coach
+  coachSuggestions String? // JSON con sugerencias del agente
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  miniTask MiniTask @relation(fields: [miniTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([miniTaskId, entryDate])
+  @@index([miniTaskId])
+  @@index([entryDate])
 }
 

@@ -13,8 +13,15 @@ export async function createMiniTaskScore(
     passed: boolean;
   }
 ): Promise<MiniTaskScore> {
-  return prisma.miniTaskScore.create({
-    data: {
+  // Usar upsert para crear o actualizar si ya existe
+  return prisma.miniTaskScore.upsert({
+    where: {
+      miniTaskId,
+    },
+    update: {
+      ...data,
+    },
+    create: {
       miniTaskId,
       ...data,
     },

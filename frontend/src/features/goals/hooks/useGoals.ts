@@ -100,8 +100,19 @@ export function useConfirmGoalValidation() {
         }
       ),
     onSuccess: (_, variables) => {
+      console.log('🔄 [CONFIRM VALIDATION] Invalidando queries después de confirmar:', {
+        goalId: variables.goalId,
+        hasAcceptedMiniTasks: !!(variables.acceptedMiniTasks && variables.acceptedMiniTasks.length > 0),
+        acceptedMiniTasksCount: variables.acceptedMiniTasks?.length || 0,
+      });
+      
+      // Invalidar queries de goals
       queryClient.invalidateQueries({ queryKey: ['goals', variables.goalId] });
       queryClient.invalidateQueries({ queryKey: ['goals'] });
+      
+      // Invalidar queries de minitasks para que se actualicen las nuevas minitasks creadas
+      queryClient.invalidateQueries({ queryKey: ['minitasks'] });
+      queryClient.invalidateQueries({ queryKey: ['minitasks', { goalId: variables.goalId }] });
     },
   });
 }

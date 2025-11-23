@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Check, X, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -86,10 +86,12 @@ export function ChecklistItemManager({
     },
   });
 
-  // Crear items iniciales si existen y no hay items aún
-  if (initialItems.length > 0 && !isLoading && data && data.items.length === 0 && !createInitialItems.isPending) {
-    createInitialItems.mutate(initialItems);
-  }
+  // Crear items iniciales si existen y no hay items aún (usar useEffect para evitar ejecución en cada render)
+  useEffect(() => {
+    if (initialItems.length > 0 && !isLoading && data && data.items.length === 0 && !createInitialItems.isPending) {
+      createInitialItems.mutate(initialItems);
+    }
+  }, [initialItems.length, isLoading, data?.items.length, createInitialItems.isPending]);
 
   const items = data?.items || [];
   const progress = data?.progress || { total: 0, completed: 0, percentage: 0, allCompleted: false };

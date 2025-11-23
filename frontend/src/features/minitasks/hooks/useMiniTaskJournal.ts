@@ -18,6 +18,13 @@ export function useMiniTaskJournal(
     limit?: number;
   }
 ) {
+  // Normalizar fechas a strings ISO para que la queryKey sea estable
+  const normalizedFilters = filters ? {
+    dateFrom: filters.dateFrom?.toISOString(),
+    dateTo: filters.dateTo?.toISOString(),
+    limit: filters.limit,
+  } : undefined;
+  
   const queryParams = new URLSearchParams();
   if (filters?.dateFrom) {
     queryParams.append('dateFrom', filters.dateFrom.toISOString());
@@ -33,12 +40,15 @@ export function useMiniTaskJournal(
   const url = `/minitasks/${miniTaskId}/journal${queryString ? `?${queryString}` : ''}`;
   
   return useQuery({
-    queryKey: ['minitask-journal', miniTaskId, filters],
+    queryKey: ['minitask-journal', miniTaskId, normalizedFilters],
     queryFn: () =>
       apiRequest<MiniTaskJournalEntry[]>(url, {
         method: 'GET',
       }),
     enabled: !!miniTaskId,
+    staleTime: 30000, // Considerar datos frescos por 30 segundos
+    refetchOnWindowFocus: false, // No refetch al enfocar ventana
+    refetchOnMount: false, // No refetch al montar si ya hay datos
   });
 }
 

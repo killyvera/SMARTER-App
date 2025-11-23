@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Check, X, Calendar as CalendarIcon, ListChecks } from 'lucide-react';
 import { format, isToday, isSameDay, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -26,7 +26,10 @@ export function ChecklistView({
   checklistItems = [],
   journalEntries = [] 
 }: ChecklistViewProps) {
-  const today = startOfDay(new Date());
+  // Usar ref para mantener fecha estable y evitar re-fetches infinitos
+  const todayRef = useRef(startOfDay(new Date()));
+  const today = todayRef.current;
+  
   const { data: allEntries } = useMiniTaskJournal(miniTaskId);
   const createEntry = useCreateMiniTaskJournalEntry();
   const updateEntry = useUpdateMiniTaskJournalEntry();

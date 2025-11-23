@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, Calendar, TrendingUp, Bell, ListChecks, Timer, Smartphone, BellRing } from 'lucide-react';
 import { BarChart, LineChart, PieChart, AreaChart, Bar, Line, Pie, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
@@ -90,13 +90,17 @@ interface MetricsDisplayProps {
 }
 
 export function MetricsDisplay({ miniTask }: MetricsDisplayProps) {
-  // Obtener entradas del journal para el mes actual
-  const monthStart = startOfMonth(new Date());
-  const monthEnd = endOfMonth(new Date());
-  const { data: journalEntries } = useMiniTaskJournal(miniTask.id, {
-    dateFrom: monthStart,
-    dateTo: monthEnd,
-  });
+  // Obtener entradas del journal para el mes actual - usar ref para mantener fechas estables
+  const dateRangeRef = useRef<{ dateFrom: Date; dateTo: Date }>();
+  if (!dateRangeRef.current) {
+    const today = new Date();
+    dateRangeRef.current = {
+      dateFrom: startOfMonth(today),
+      dateTo: endOfMonth(today),
+    };
+  }
+  
+  const { data: journalEntries } = useMiniTaskJournal(miniTask.id, dateRangeRef.current);
 
   // Preparar datos para la gráfica
   const chartData = useMemo(() => {

@@ -5,7 +5,7 @@ import { es } from 'date-fns/locale';
 import type { MiniTaskResponse } from '@smarter-app/shared';
 import { CheckCircle2, Circle, XCircle, Clock, Lock, Unlock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useMiniTaskJournal } from '../hooks/useMiniTaskJournal';
 import { startOfDay, isToday } from 'date-fns';
 
@@ -44,10 +44,17 @@ export function MiniTaskCard({ miniTask, onStatusChange, onUnlock }: MiniTaskCar
   }, [isUnlocked, miniTask.plugins]);
 
   // Obtener entradas del journal para calcular cumplimiento (solo si está desbloqueada)
-  const { data: journalEntries } = useMiniTaskJournal(miniTask.id, isUnlocked ? {
-    dateFrom: startOfDay(new Date()),
-    dateTo: new Date(),
-  } : undefined);
+  // Usar ref para mantener fechas estables y evitar re-fetches infinitos
+  const todayRangeRef = useRef<{ dateFrom: Date; dateTo: Date }>();
+  if (!todayRangeRef.current) {
+    const today = new Date();
+    todayRangeRef.current = {
+      dateFrom: startOfDay(today),
+      dateTo: today,
+    };
+  }
+  
+  const { data: journalEntries } = useMiniTaskJournal(miniTask.id, isUnlocked ? todayRangeRef.current : undefined);
 
   // Verificar si hay entrada de hoy (cumplimiento diario)
   const hasTodayEntry = useMemo(() => {

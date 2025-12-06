@@ -54,8 +54,36 @@ export default function RootLayout({
               if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
                   navigator.serviceWorker.register('/sw.js')
-                    .then((reg) => console.log('Service Worker registrado:', reg))
+                    .then((reg) => {
+                      console.log('Service Worker registrado:', reg);
+                      
+                      // Verificar actualizaciones periódicamente
+                      setInterval(() => {
+                        reg.update();
+                      }, 60 * 60 * 1000); // Cada hora
+                      
+                      // Escuchar cambios en el service worker
+                      reg.addEventListener('updatefound', () => {
+                        const newWorker = reg.installing;
+                        if (newWorker) {
+                          newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                              // Hay una nueva versión disponible
+                              console.log('Nueva versión del Service Worker disponible');
+                              // El componente UpdateBanner se encargará de mostrar la notificación
+                            }
+                          });
+                        }
+                      });
+                    })
                     .catch((err) => console.error('Error registrando Service Worker:', err));
+                });
+                
+                // Escuchar mensajes del service worker
+                navigator.serviceWorker.addEventListener('message', (event) => {
+                  if (event.data && event.data.type === 'SW_ACTIVATED') {
+                    console.log('Service Worker activado con versión:', event.data.version);
+                  }
                 });
               }
             `,

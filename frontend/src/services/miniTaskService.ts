@@ -181,6 +181,11 @@ export async function getMiniTasksByStatusService(userId: string, status: string
   return findMiniTasksByStatus(userId, status as any);
 }
 
+export async function getAllMiniTasksByUserService(userId: string) {
+  const { findMiniTasksByUser } = await import('@/repositories/miniTaskRepository');
+  return findMiniTasksByUser(userId);
+}
+
 export async function getMiniTaskService(miniTaskId: string, userId: string) {
   const miniTask = await findMiniTaskById(miniTaskId) as any;
   

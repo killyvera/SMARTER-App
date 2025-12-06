@@ -4,6 +4,7 @@ import {
   createMiniTaskService,
   getMiniTasksByGoalService,
   getMiniTasksByStatusService,
+  getAllMiniTasksByUserService,
 } from '@/services/miniTaskService';
 import { logApiRequest, logApiError } from '@/lib/api-logger';
 import { getUserId } from '@/lib/auth/getUserId';
@@ -28,12 +29,9 @@ export async function GET(request: NextRequest) {
       miniTasks = await getMiniTasksByStatusService(userId, status);
       path += `?status=${status}`;
     } else {
-      const duration = Date.now() - startTime;
-      logApiRequest('GET', path, 400, duration);
-      return NextResponse.json(
-        { error: 'Debe proporcionar goalId o status' },
-        { status: 400 }
-      );
+      // Si no hay filtros, obtener todas las mini-tasks del usuario
+      miniTasks = await getAllMiniTasksByUserService(userId);
+      path += '?all=true';
     }
     
     const duration = Date.now() - startTime;

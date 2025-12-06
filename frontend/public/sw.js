@@ -1,6 +1,12 @@
-const CACHE_NAME = 'smarter-app-v1';
-const STATIC_CACHE = 'smarter-app-static-v1';
-const API_CACHE = 'smarter-app-api-v1';
+// Versión del service worker - se actualiza cuando cambia el archivo
+// En producción, esto debería cambiar en cada deploy
+const SW_VERSION = 'v2'; // Incrementar este número cuando haya cambios importantes
+const BUILD_TIMESTAMP = Date.now().toString();
+const APP_VERSION = `${SW_VERSION}-${BUILD_TIMESTAMP}`;
+
+const CACHE_NAME = `smarter-app-${APP_VERSION}`;
+const STATIC_CACHE = `smarter-app-static-${APP_VERSION}`;
+const API_CACHE = `smarter-app-api-${APP_VERSION}`;
 
 // Detectar si estamos en desarrollo
 const IS_DEV = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
@@ -55,11 +61,14 @@ self.addEventListener('activate', (event) => {
       return Promise.all(
         cacheNames
           .filter((cacheName) => {
-            return (
-              cacheName !== STATIC_CACHE &&
-              cacheName !== API_CACHE &&
-              cacheName !== CACHE_NAME
-            );
+            // Eliminar todos los caches antiguos que no coincidan con la versión actual
+            const isOldCache = (
+              cacheName.startsWith('smarter-app-') || 
+              cacheName.startsWith('smarter-app-static-') ||
+              cacheName.startsWith('smarter-app-api-')
+            ) && !cacheName.includes(APP_VERSION);
+            
+            return isOldCache;
           })
           .map((cacheName) => {
             console.log('Service Worker: Eliminando cache antiguo:', cacheName);
@@ -68,7 +77,26 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
-  return self.clients.claim();
+  
+  // Notificar a todos los clientes que el service worker está activo
+  return self.clients.claim().then(() => {
+    // Enviar mensaje a todos los clientes para que sepan que hay una nueva versión
+    return self.clients.matchAll().then((clients) => {
+      clients.forEach((client) => {
+        client.postMessage({
+          type: 'SW_ACTIVATED',
+          version: APP_VERSION,
+        });
+      });
+    });
+  });
+});
+
+// Escuchar mensajes del cliente para forzar actualización
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // Función helper para verificar si es un recurso de Next.js

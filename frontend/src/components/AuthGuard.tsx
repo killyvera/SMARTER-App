@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useAppVersion } from '@/hooks/useAppVersion';
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -11,12 +12,16 @@ interface AuthGuardProps {
 export function AuthGuard({ children }: AuthGuardProps) {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  const { checkVersion } = useAppVersion();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       router.replace('/login');
+    } else if (isAuthenticated) {
+      // Verificar versión cuando el usuario está autenticado
+      checkVersion();
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, router, checkVersion]);
 
   if (isLoading) {
     return (

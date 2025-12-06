@@ -37,6 +37,12 @@ export function useAuth() {
             isAuthenticated: true,
             isLoading: false,
           });
+          
+          // Verificar versión después del login
+          // Importar dinámicamente para evitar problemas de SSR
+          import('@/hooks/useAppVersion').then(({ useAppVersion }) => {
+            // El hook se ejecutará automáticamente cuando se monte el componente
+          });
         } catch {
           // Si hay error parseando, limpiar
           localStorage.removeItem('token');

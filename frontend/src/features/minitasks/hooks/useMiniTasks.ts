@@ -10,16 +10,18 @@ import type {
 
 export function useMiniTasks(filters?: { goalId?: string; status?: string }) {
   return useQuery({
-    queryKey: ['minitasks', filters],
+    queryKey: ['minitasks', filters || 'all'],
     queryFn: () => {
       const params = new URLSearchParams();
       if (filters?.goalId) params.append('goalId', filters.goalId);
       if (filters?.status) params.append('status', filters.status);
-      return apiRequest<MiniTaskResponse[]>(`/minitasks?${params.toString()}`, {
+      const queryString = params.toString();
+      return apiRequest<MiniTaskResponse[]>(`/minitasks${queryString ? `?${queryString}` : ''}`, {
         method: 'GET',
       });
     },
-    enabled: !!(filters?.goalId || filters?.status),
+    // Habilitar siempre - el endpoint ahora soporta obtener todas sin filtros
+    enabled: true,
   });
 }
 

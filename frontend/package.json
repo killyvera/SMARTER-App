@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "next dev -H 0.0.0.0",
-    "build": "prisma generate && next build",
+    "build": "cross-env NEXT_PUBLIC_BUILD_TIME=$(date +%s) NEXT_PUBLIC_APP_VERSION=v$(date +%s) prisma generate && next build",
     "start": "next start",
     "postinstall": "prisma generate",
     "lint": "next lint",

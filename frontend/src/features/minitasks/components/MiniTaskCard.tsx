@@ -31,6 +31,27 @@ const statusIcons: Record<string, typeof Circle> = {
   CANCELLED: XCircle,
 };
 
+// Función helper para truncar texto por palabras completas
+function truncateByWords(text: string, maxLength: number): string {
+  if (!text || text.length <= maxLength) {
+    return text;
+  }
+  
+  // Truncar hasta maxLength caracteres
+  const truncated = text.substring(0, maxLength);
+  
+  // Buscar el último espacio para no cortar palabras
+  const lastSpace = truncated.lastIndexOf(' ');
+  
+  // Si hay un espacio y no está muy cerca del inicio, usar ese punto
+  if (lastSpace > maxLength * 0.5) {
+    return truncated.substring(0, lastSpace) + '...';
+  }
+  
+  // Si no hay espacio razonable, simplemente truncar y agregar puntos
+  return truncated + '...';
+}
+
 export function MiniTaskCard({ miniTask, onStatusChange, onUnlock }: MiniTaskCardProps) {
   const router = useRouter();
   const Icon = statusIcons[miniTask.status] || Circle;
@@ -88,7 +109,13 @@ export function MiniTaskCard({ miniTask, onStatusChange, onUnlock }: MiniTaskCar
         <div className="flex items-start gap-2 flex-1">
           <Icon className="h-5 w-5 mt-0.5 flex-shrink-0 text-muted-foreground" />
           <div className="flex-1 min-w-0">
-            <h4 className="font-medium text-base truncate">{miniTask.title}</h4>
+            <h4 
+              className="font-medium text-base sm:truncate" 
+              title={miniTask.title}
+            >
+              <span className="sm:hidden">{truncateByWords(miniTask.title, 50)}</span>
+              <span className="hidden sm:inline">{miniTask.title}</span>
+            </h4>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-xs text-muted-foreground">{taskType}</span>
               {!isUnlocked && (

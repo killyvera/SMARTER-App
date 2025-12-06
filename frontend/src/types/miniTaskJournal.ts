@@ -8,6 +8,7 @@ export interface MiniTaskJournalEntry {
   obstacles?: string | null;
   mood?: string | null;
   timeSpent?: number | null;
+  checklistCompleted?: boolean | null;
   metricsData?: string | null;
   coachQuery?: string | null;
   coachResponse?: string | null;
@@ -24,6 +25,7 @@ export interface CreateMiniTaskJournalEntryInput {
   obstacles?: string;
   mood?: string;
   timeSpent?: number;
+  checklistCompleted?: boolean;
   metricsData?: Record<string, any>;
 }
 
@@ -34,6 +36,7 @@ export interface UpdateMiniTaskJournalEntryInput {
   obstacles?: string;
   mood?: string;
   timeSpent?: number;
+  checklistCompleted?: boolean;
   metricsData?: Record<string, any>;
 }
 

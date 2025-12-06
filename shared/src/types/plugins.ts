@@ -10,6 +10,7 @@ export const PluginType = z.enum([
   'notification',
   'mobile-push',
   'chart',
+  'pomodoro',
 ]);
 
 export type PluginType = z.infer<typeof PluginType>;
@@ -33,6 +34,7 @@ export const CalendarPluginConfigSchema = BasePluginConfigSchema.extend({
   checklistType: z.enum(['single', 'daily', 'multi-item']).optional(), // Tipo de checklist
   checklistLabel: z.string().optional(), // Etiqueta personalizada para el check (ej: "Tomar medicamento")
   checklistItems: z.array(z.string()).optional(), // Etiquetas iniciales para multi-item (ej: ["Lienzo", "Pinturas"])
+  plannedHours: z.number().positive().optional(), // Horas planificadas para tasks de un solo día
 });
 
 export type CalendarPluginConfig = z.infer<typeof CalendarPluginConfigSchema>;
@@ -65,6 +67,19 @@ export const ChartPluginConfigSchema = BasePluginConfigSchema.extend({
 
 export type ChartPluginConfig = z.infer<typeof ChartPluginConfigSchema>;
 
+// Configuración específica de Pomodoro Plugin
+export const PomodoroPluginConfigSchema = BasePluginConfigSchema.extend({
+  workDuration: z.number().int().positive().default(25), // minutos (default: 25)
+  shortBreakDuration: z.number().int().positive().default(5), // minutos (default: 5)
+  longBreakDuration: z.number().int().positive().default(15), // minutos (default: 15)
+  sessionsUntilLongBreak: z.number().int().positive().default(4), // default: 4
+  autoStartNext: z.boolean().default(false), // default: false
+  autoLogToJournal: z.boolean().default(true), // default: true
+  soundEnabled: z.boolean().default(true), // default: true
+});
+
+export type PomodoroPluginConfig = z.infer<typeof PomodoroPluginConfigSchema>;
+
 // Configuración de métricas de minitask
 export const MiniTaskMetricsConfigSchema = z.object({
   unlocked: z.boolean().default(false),
@@ -92,6 +107,8 @@ export type MiniTaskMetricsConfig = z.infer<typeof MiniTaskMetricsConfigSchema>;
 export interface UnlockMiniTaskResponse {
   improvedTitle: string;
   improvedDescription?: string;
+  isSingleDayTask?: boolean;
+  plannedHours?: number;
   metrics: Array<{
     type: string;
     description: string;

@@ -66,24 +66,39 @@ export function CalendarView({ frequency = 'diaria', alarmTime, alarmTimes, chec
     const isExpected = expectedDays.some(d => isSameDay(d, day));
     const isTodayDate = isToday(day);
     const checklistCompleted = entry?.checklistCompleted ?? false;
+    
+    // Detectar si hay progreso parcial (timeSpent o progressValue)
+    const hasProgress = hasEntry && (
+      (entry.timeSpent && entry.timeSpent > 0) || 
+      (entry.progressValue !== null && entry.progressValue > 0)
+    );
 
     // Si el checklist está habilitado, priorizar el estado del checklist
     if (checklistEnabled) {
       if (hasEntry && checklistCompleted && isExpected) {
         return 'completed'; // Verde: checklist completado
+      } else if (hasEntry && hasProgress && !checklistCompleted && isExpected) {
+        return 'in-progress'; // Naranja: entrada con progreso pero sin completar checklist
       } else if (hasEntry && !checklistCompleted && isExpected) {
-        return 'partial'; // Amarillo: entrada pero sin checklist
+        return 'partial'; // Amarillo: entrada pero sin checklist ni progreso
       } else if (isExpected && !hasEntry && day <= today) {
         return 'missed'; // Rojo: día esperado sin entrada ni checklist
       } else if (isExpected && !hasEntry) {
         return 'pending'; // Gris: día esperado futuro
       }
     } else {
-      // Lógica original sin checklist
+      // Lógica sin checklist: verificar progreso parcial
       if (hasEntry && isExpected) {
+        // Si hay progreso pero no está completo (basado en timeSpent o progressValue)
+        if (hasProgress) {
+          // Considerar completo si hay suficiente progreso o si no hay objetivo definido
+          return 'completed'; // Verde: día esperado con entrada y progreso
+        }
         return 'completed'; // Verde: día esperado con entrada
+      } else if (hasEntry && !isExpected && hasProgress) {
+        return 'in-progress'; // Naranja: entrada adicional con progreso
       } else if (hasEntry && !isExpected) {
-        return 'extra'; // Azul: entrada adicional
+        return 'extra'; // Azul: entrada adicional sin progreso
       } else if (isExpected && !hasEntry && day <= today) {
         return 'missed'; // Rojo: día esperado sin entrada
       } else if (isExpected && !hasEntry) {
@@ -94,16 +109,16 @@ export function CalendarView({ frequency = 'diaria', alarmTime, alarmTimes, chec
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-3">
-        <Calendar className="h-5 w-5 text-primary" />
-        <h3 className="font-semibold">Calendario de Seguimiento</h3>
+    <div className="space-y-3 sm:space-y-4">
+      <div className="flex items-center gap-2 mb-2 sm:mb-3">
+        <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+        <h3 className="text-base sm:text-lg font-semibold">Calendario de Seguimiento</h3>
       </div>
 
-      <div className="border rounded-lg p-4 bg-card">
+      <div className="border rounded-lg p-3 sm:p-4 bg-card">
         {/* Información de configuración */}
-        <div className="mb-4 space-y-2">
-          <div className="flex items-center gap-2 text-sm">
+        <div className="mb-3 sm:mb-4 space-y-1.5 sm:space-y-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
             <span className="text-muted-foreground">Frecuencia:</span>
             <span className="font-medium capitalize">
               {frequency === 'diaria' || frequency === 'daily' ? 'Diaria' :
@@ -113,16 +128,16 @@ export function CalendarView({ frequency = 'diaria', alarmTime, alarmTimes, chec
             </span>
           </div>
           {(alarmTimes && alarmTimes.length > 0) || alarmTime ? (
-            <div className="flex items-center gap-2 text-sm">
-              <Clock className="h-4 w-4 text-muted-foreground" />
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
+              <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
               <span className="text-muted-foreground">Alarmas:</span>
-              <span className="font-medium">
+              <span className="font-medium break-words">
                 {(alarmTimes && alarmTimes.length > 0) ? alarmTimes.join(', ') : alarmTime}
               </span>
             </div>
           ) : null}
           {checklistEnabled && (
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
               <span className="text-muted-foreground">Checklist:</span>
               <span className="font-medium text-green-600">
                 {checklistType === 'multi-item' 
@@ -138,21 +153,21 @@ export function CalendarView({ frequency = 'diaria', alarmTime, alarmTimes, chec
         {/* Calendario */}
         <div className="space-y-2">
           {/* Encabezado con mes y año */}
-          <div className="text-center font-semibold mb-3">
+          <div className="text-center text-sm sm:text-base font-semibold mb-2 sm:mb-3">
             {format(today, 'MMMM yyyy', { locale: es })}
           </div>
 
           {/* Días de la semana */}
-          <div className="grid grid-cols-7 gap-1 mb-2">
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-1.5 sm:mb-2">
             {weekDays.map(day => (
-              <div key={day} className="text-center text-xs font-medium text-muted-foreground py-1">
+              <div key={day} className="text-center text-[10px] sm:text-xs font-medium text-muted-foreground py-0.5 sm:py-1">
                 {day}
               </div>
             ))}
           </div>
 
           {/* Días del mes */}
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
             {/* Espacios vacíos al inicio */}
             {Array.from({ length: getDay(monthStart) }).map((_, i) => (
               <div key={`empty-${i}`} className="aspect-square" />
@@ -169,14 +184,15 @@ export function CalendarView({ frequency = 'diaria', alarmTime, alarmTimes, chec
                 <div
                   key={dateKey}
                   className={`
-                    aspect-square rounded-md flex flex-col items-center justify-center text-xs
+                    aspect-square rounded sm:rounded-md flex flex-col items-center justify-center text-[10px] sm:text-xs
                     transition-colors cursor-pointer hover:opacity-80
                     ${status === 'completed' ? 'bg-green-500 text-white' :
+                      status === 'in-progress' ? 'bg-orange-500 text-white' :
                       status === 'missed' ? 'bg-red-500 text-white' :
                       status === 'pending' ? 'bg-yellow-500 text-white' :
                       status === 'partial' ? 'bg-yellow-300 text-yellow-900' :
                       status === 'extra' ? 'bg-blue-500 text-white' :
-                      isTodayDate ? 'bg-primary/10 border-2 border-primary' :
+                      isTodayDate ? 'bg-primary/10 border border-primary sm:border-2' :
                       'bg-muted hover:bg-muted/80'}
                   `}
                   title={
@@ -189,12 +205,12 @@ export function CalendarView({ frequency = 'diaria', alarmTime, alarmTimes, chec
                 >
                   <span className="font-medium">{format(day, 'd')}</span>
                   {checklistEnabled && entry && (
-                    <span className="text-[10px]">
+                    <span className="text-[8px] sm:text-[10px]">
                       {entry.checklistCompleted ? '✓' : '○'}
                     </span>
                   )}
                   {!checklistEnabled && entry && entry.progressValue !== null && (
-                    <span className="text-[10px] opacity-90">
+                    <span className="text-[8px] sm:text-[10px] opacity-90">
                       {entry.progressValue}
                     </span>
                   )}
@@ -205,12 +221,16 @@ export function CalendarView({ frequency = 'diaria', alarmTime, alarmTimes, chec
         </div>
 
         {/* Leyenda */}
-        <div className="mt-4 pt-4 border-t flex flex-wrap gap-4 text-xs">
+        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t flex flex-wrap gap-2 sm:gap-4 text-[10px] sm:text-xs">
           {checklistEnabled ? (
             <>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded bg-green-500" />
                 <span>Checklist Completado</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-orange-500" />
+                <span>En Proceso</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded bg-yellow-300" />
@@ -226,6 +246,10 @@ export function CalendarView({ frequency = 'diaria', alarmTime, alarmTimes, chec
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded bg-green-500" />
                 <span>Completado</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 rounded bg-orange-500" />
+                <span>En Proceso</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 rounded bg-yellow-500" />

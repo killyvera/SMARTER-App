@@ -8,7 +8,8 @@ import {
   getJournalMetrics,
 } from '@/repositories/miniTaskJournalRepository';
 import { findMiniTaskById } from '@/repositories/miniTaskRepository';
-import { queryMiniTaskCoach, type MiniTaskCoachContext } from '@/clients/aiClient';
+import { queryMiniTaskCoach } from '@/clients/aiClient';
+import type { MiniTaskCoachContext } from '@/types/miniTaskJournal';
 import { createMiniTaskMetric } from '@/repositories/miniTaskRepository';
 import { startOfDay } from 'date-fns';
 import type { CreateMiniTaskJournalEntryInput, UpdateMiniTaskJournalEntryInput } from '@/types/miniTaskJournal';
@@ -195,12 +196,12 @@ export async function queryCoachService(
     const entries = await findMiniTaskJournalEntries(miniTaskId, { limit: 14 });
     journalHistory = entries.map(entry => ({
       entryDate: entry.entryDate,
-      progressValue: entry.progressValue,
-      progressUnit: entry.progressUnit,
-      notes: entry.notes,
-      obstacles: entry.obstacles,
-      mood: entry.mood,
-      timeSpent: entry.timeSpent,
+      progressValue: entry.progressValue ?? undefined,
+      progressUnit: entry.progressUnit ?? undefined,
+      notes: entry.notes ?? undefined,
+      obstacles: entry.obstacles ?? undefined,
+      mood: entry.mood ?? undefined,
+      timeSpent: entry.timeSpent ?? undefined,
     }));
     
     const metrics = await getJournalMetrics(miniTaskId);

@@ -23,6 +23,8 @@ export async function createGoalService(userId: string, input: CreateGoalInput) 
     title: input.title,
     description: input.description,
     deadline,
+    plannedHours: input.plannedHours,
+    isSingleDayGoal: input.isSingleDayGoal ?? false,
   });
 }
 
@@ -79,6 +81,14 @@ export async function validateGoalService(
       description: updatedGoal.description || undefined,
       deadline: updatedGoal.deadline ? format(updatedGoal.deadline, 'yyyy-MM-dd') : undefined,
     });
+    
+    // Actualizar isSingleDayGoal y plannedHours si el agente IA los detectó
+    if (validation.isSingleDayGoal !== undefined || validation.plannedHours !== undefined) {
+      await updateGoal(goalId, userId, {
+        isSingleDayGoal: validation.isSingleDayGoal ?? false,
+        plannedHours: validation.plannedHours,
+      });
+    }
     
     // Guardar SmarterScore
     const score = await createSmarterScore(goalId, {
@@ -227,6 +237,8 @@ export async function updateGoalService(
     title: input.title,
     description: input.description,
     deadline,
+    plannedHours: input.plannedHours,
+    isSingleDayGoal: input.isSingleDayGoal,
   });
 }
 

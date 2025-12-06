@@ -81,6 +81,8 @@ export interface GoalValidationResponse {
   feedback: string;
   suggestedTitle?: string | null;
   suggestedDescription?: string | null;
+  isSingleDayGoal?: boolean;
+  plannedHours?: number;
   suggestedMiniTasks?: Array<{
     title: string;
     description?: string;
@@ -146,6 +148,8 @@ Responde SOLO con un JSON válido en este formato exacto:
   "feedback": "<comentario breve sobre la meta>",
   "suggestedTitle": "<título mejorado que sea más específico y medible - SIEMPRE proporciona una sugerencia>",
   "suggestedDescription": "<descripción mejorada con más detalles medibles - SIEMPRE proporciona una sugerencia>",
+  "isSingleDayGoal": <true|false opcional, true si es goal de un solo día>,
+  "plannedHours": <número opcional, horas planificadas si es de un solo día>,
   "suggestedMiniTasks": [
     {
       "title": "<título de minitarea sugerida - debe ser una acción concreta>",
@@ -364,7 +368,16 @@ IMPORTANTE - Plugins obligatorios:
 Analiza la minitask y:
 1. Mejora el título y descripción para que sea más específica y medible
 2. Identifica qué métricas son apropiadas para medir el progreso (diario, semanal, mensual, trimestral)
-3. Determina si la tarea es un EVENTO ÚNICO o TAREA REPETITIVA:
+3. DETECTA SI ES UNA TAREA DE UN SOLO DÍA CON HORAS PLANIFICADAS:
+   - Si el título/descripción menciona "hoy", "dedicar X horas", "2 horas a...", "pasar X horas", etc.
+   - Si el deadline es el mismo día o muy cercano (dentro de 1-2 días)
+   - Si menciona horas específicas a dedicar (ej: "Dedicar 2 horas a estudiar inglés hoy")
+   - ENTONCES: marca isSingleDayTask: true y extrae plannedHours del texto (convierte a número decimal)
+   - Ejemplos:
+     * "Dedicar 2 horas a estudiar inglés hoy" → isSingleDayTask: true, plannedHours: 2.0
+     * "Quiero pasar 1.5 horas trabajando en el proyecto hoy" → isSingleDayTask: true, plannedHours: 1.5
+     * "Hoy voy a dedicar 3 horas a leer" → isSingleDayTask: true, plannedHours: 3.0
+4. Determina si la tarea es un EVENTO ÚNICO o TAREA REPETITIVA:
    
    EVENTOS ÚNICOS (se completan una vez):
    - Tareas que se realizan una sola vez antes de una fecha límite (ej: "Preparar materiales", "Verificar documentos", "Configurar equipo")
@@ -384,7 +397,13 @@ Analiza la minitask y:
    - Tareas con progreso medible numéricamente (horas, páginas, items) → usa progress-tracker en lugar de checklist
    - Eventos únicos NUNCA deben tener frequency: 'daily', solo usan deadline
    - Tareas diarias SIEMPRE deben tener frequency: 'daily' y checklistType: 'daily'
-4. Selecciona los plugins (MÍNIMO 2, típicamente 3-4):
+   - TAREAS DE UN SOLO DÍA CON HORAS:
+     * Si detectaste isSingleDayTask: true y plannedHours:
+       - Configura calendar con frequency: 'daily' pero deadline del mismo día
+       - Configura progress-tracker con targetValue igual a plannedHours y unit: 'hours'
+       - Agrega plannedHours al config de calendar también
+       - Configura alarmTimes apropiadas para recordar al usuario (ej: ['09:00', '14:00'])
+5. Selecciona los plugins (MÍNIMO 2, típicamente 3-4):
    - OBLIGATORIO: calendar
      * Para EVENTOS ÚNICOS:
        - checklistType: 'single' (un elemento) o 'multi-item' (múltiples elementos)
@@ -401,17 +420,19 @@ Analiza la minitask y:
      * Para tareas sin checklist: solo alarmas, sin checklistEnabled
    - OBLIGATORIO: chart (para gráficas de progreso)
    - ADICIONAL: reminder (si necesita recordatorios adicionales), progress-tracker (si hay progreso numérico), notification, etc.
-5. Configura cada plugin con parámetros apropiados:
-   - calendar: frequency, alarmTimes (array), checklistEnabled (boolean), checklistLabel (string opcional)
+6. Configura cada plugin con parámetros apropiados:
+   - calendar: frequency, alarmTimes (array), checklistEnabled (boolean), checklistLabel (string opcional), plannedHours (número opcional si es de un solo día)
    - reminder: reminderTimes (array de horas HH:mm)
-   - progress-tracker: targetValue, unit
+   - progress-tracker: targetValue (usar plannedHours si existe), unit ('hours' si es seguimiento por horas)
    - chart: chartType, metricType, timeRange
-6. Realiza un análisis SMARTER completo
+7. Realiza un análisis SMARTER completo
 
 Responde SOLO con un JSON válido en este formato exacto:
 {
   "improvedTitle": "<título mejorado y más específico>",
   "improvedDescription": "<descripción mejorada con detalles medibles>",
+  "isSingleDayTask": <true|false opcional, true si es tarea de un solo día>,
+  "plannedHours": <número opcional, horas planificadas si es de un solo día>,
   "metrics": [
     {
       "type": "<tipo de métrica, ej: progreso, completitud, tiempo>",
@@ -605,41 +626,6 @@ ${request.goalContext.description ? `Descripción: ${request.goalContext.descrip
     
     throw new Error('Error al desbloquear minitask con IA: Error desconocido');
   }
-}
-
-export interface MiniTaskCoachContext {
-  miniTask: {
-    id: string;
-    title: string;
-    description?: string;
-    deadline?: Date;
-    status: string;
-    unlocked: boolean;
-  };
-  goal: {
-    title: string;
-    description?: string;
-  };
-  plugins?: Array<{
-    pluginId: string;
-    config: any;
-    enabled: boolean;
-  }>;
-  journalHistory?: Array<{
-    entryDate: Date;
-    progressValue?: number;
-    progressUnit?: string;
-    notes?: string;
-    obstacles?: string;
-    mood?: string;
-    timeSpent?: number;
-  }>;
-  currentMetrics?: {
-    totalEntries: number;
-    daysWithEntries: number;
-    avgProgress: number;
-    totalTimeSpent: number;
-  };
 }
 
 const COACH_PROMPT = `Eres un coach experto en metodología SMARTER. Tu rol es ayudar al usuario a alcanzar sus minitasks proporcionando feedback constructivo, análisis de progreso y sugerencias accionables.

@@ -3,7 +3,7 @@ import type { Goal } from '@prisma/client';
 
 export async function createGoal(
   userId: string,
-  data: { title: string; description?: string; deadline?: Date }
+  data: { title: string; description?: string; deadline?: Date; plannedHours?: number; isSingleDayGoal?: boolean }
 ): Promise<Goal> {
   return prisma.goal.create({
     data: {
@@ -11,6 +11,8 @@ export async function createGoal(
       title: data.title,
       description: data.description,
       deadline: data.deadline,
+      plannedHours: data.plannedHours,
+      isSingleDayGoal: data.isSingleDayGoal ?? false,
       status: 'DRAFT',
     },
   });
@@ -27,11 +29,6 @@ export async function findGoalById(id: string, userId: string): Promise<Goal | n
       miniTasks: {
         include: {
           score: true,
-        },
-      },
-      checkIns: {
-        orderBy: {
-          createdAt: 'desc',
         },
       },
       readjustments: {
@@ -62,7 +59,6 @@ export async function findGoalsByUser(
       _count: {
         select: {
           miniTasks: true,
-          checkIns: true,
         },
       },
     },
@@ -75,7 +71,7 @@ export async function findGoalsByUser(
 export async function updateGoal(
   id: string,
   userId: string,
-  data: { title?: string; description?: string; deadline?: Date; status?: string }
+  data: { title?: string; description?: string; deadline?: Date; status?: string; plannedHours?: number; isSingleDayGoal?: boolean }
 ): Promise<Goal> {
   return prisma.goal.update({
     where: {

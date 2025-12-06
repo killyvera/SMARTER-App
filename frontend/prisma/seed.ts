@@ -26,7 +26,6 @@ async function main() {
   }
   await prisma.suggestedMiniTask.deleteMany({});
   await prisma.readjustment.deleteMany({});
-  await prisma.checkIn.deleteMany({});
   await prisma.miniTaskScore.deleteMany({});
   await prisma.miniTask.deleteMany({});
   await prisma.smarterScore.deleteMany({});
@@ -247,39 +246,6 @@ async function main() {
     },
   });
 
-  // CheckIns para goal completado
-  await prisma.checkIn.create({
-    data: {
-      goalId: goal1.id,
-      progressPercentage: 25,
-      currentValue: 'Módulo 1 completado',
-      notes: 'Buen progreso, entendiendo bien los conceptos',
-      mood: 'motivado',
-      createdAt: new Date('2024-02-20'),
-    },
-  });
-
-  await prisma.checkIn.create({
-    data: {
-      goalId: goal1.id,
-      progressPercentage: 60,
-      currentValue: 'Módulo 2 completado, empezando módulo 3',
-      notes: 'App Router es más complejo de lo esperado pero avanzando bien',
-      mood: 'determinado',
-      createdAt: new Date('2024-04-12'),
-    },
-  });
-
-  await prisma.checkIn.create({
-    data: {
-      goalId: goal1.id,
-      progressPercentage: 100,
-      currentValue: 'Certificación obtenida con 92%',
-      notes: '¡Meta completada! Muy satisfecho con el resultado',
-      mood: 'feliz',
-      createdAt: new Date('2024-11-12'),
-    },
-  });
 
   console.log('✅ Goal 1 (COMPLETADA) creada con 3 minitasks completadas y 3 checkins');
 
@@ -501,39 +467,6 @@ async function main() {
     },
   });
 
-  // CheckIns para goal activa
-  await prisma.checkIn.create({
-    data: {
-      goalId: goal2.id,
-      progressPercentage: 15,
-      currentValue: 'Investigación completada, primer capítulo en progreso',
-      notes: 'Buen inicio, encontré excelentes recursos',
-      mood: 'entusiasmado',
-      createdAt: new Date('2024-09-25'),
-    },
-  });
-
-  await prisma.checkIn.create({
-    data: {
-      goalId: goal2.id,
-      progressPercentage: 30,
-      currentValue: 'Primer capítulo completado (20 páginas)',
-      notes: 'Progreso constante, escribiendo 2-3 páginas por día',
-      mood: 'motivado',
-      createdAt: new Date('2024-10-18'),
-    },
-  });
-
-  await prisma.checkIn.create({
-    data: {
-      goalId: goal2.id,
-      progressPercentage: 45,
-      currentValue: 'Segundo capítulo al 60%',
-      notes: 'Algunos días sin escribir, necesito retomar el ritmo',
-      mood: 'determinado',
-      createdAt: new Date('2024-11-20'),
-    },
-  });
 
   // Readjustment para goal activa (cambió el deadline)
   await prisma.readjustment.create({
@@ -855,30 +788,8 @@ async function main() {
     },
   });
 
-  // CheckIns para goal3
-  await prisma.checkIn.create({
-    data: {
-      goalId: goal3.id,
-      progressPercentage: 20,
-      currentValue: '5 km completados sin parar',
-      notes: 'Me siento bien, el entrenamiento está funcionando',
-      mood: 'motivado',
-      createdAt: new Date('2024-09-12'),
-    },
-  });
 
-  await prisma.checkIn.create({
-    data: {
-      goalId: goal3.id,
-      progressPercentage: 40,
-      currentValue: '10 km completados, empezando entrenamiento de resistencia',
-      notes: 'Progreso constante, aumentando distancia gradualmente',
-      mood: 'determinado',
-      createdAt: new Date('2024-10-18'),
-    },
-  });
-
-  console.log('✅ Goal 3 (ACTIVA) creada con 4 minitasks (2 completadas, 2 pendientes) y 2 checkins');
+  console.log('✅ Goal 3 (ACTIVA) creada con 4 minitasks (2 completadas, 2 pendientes)');
 
   // ============================================
   // GOAL 4: DRAFT - Sin validar
@@ -957,19 +868,378 @@ async function main() {
 
   console.log('✅ Goal 5 (DRAFT) creada con 1 minitask en draft');
 
+  // ============================================
+  // GOAL 6: GOAL DE UN SOLO DÍA CON HORAS PLANIFICADAS
+  // ============================================
+  const goal6 = await prisma.goal.create({
+    data: {
+      userId: user.id,
+      title: 'Dedicar 2 horas a estudiar inglés hoy',
+      description: 'Completar 2 horas de estudio intensivo de inglés hoy, enfocándome en vocabulario y gramática',
+      status: 'ACTIVE',
+      deadline: new Date(new Date().setHours(23, 59, 59, 999)), // Hoy a las 23:59
+      plannedHours: 2.0,
+      isSingleDayGoal: true,
+      createdAt: new Date(),
+    },
+  });
+
+  await prisma.smarterScore.create({
+    data: {
+      goalId: goal6.id,
+      specific: 90,
+      measurable: 95,
+      achievable: 85,
+      relevant: 90,
+      timebound: 95,
+      evaluate: 88,
+      readjust: 85,
+      average: 89.7,
+      passed: true,
+    },
+  });
+
+  // Mini-task desbloqueada con horas planificadas
+  const mt6_1 = await prisma.miniTask.create({
+    data: {
+      goalId: goal6.id,
+      title: 'Estudiar vocabulario y gramática (2 horas)',
+      description: 'Dedicar 2 horas completas a estudiar vocabulario nuevo y repasar reglas gramaticales',
+      status: 'IN_PROGRESS',
+      deadline: new Date(new Date().setHours(23, 59, 59, 999)),
+      unlocked: true,
+      plannedHours: 2.0,
+      isSingleDayTask: true,
+      metricsConfig: JSON.stringify({
+        unlocked: true,
+        unlockedAt: new Date().toISOString(),
+        plugins: [
+          { id: 'calendar', config: { enabled: true, frequency: 'daily', alarmTimes: ['09:00', '14:00'], plannedHours: 2.0, checklistEnabled: false } },
+          { id: 'chart', config: { enabled: true, chartType: 'bar', metricType: 'horas-estudiadas', timeRange: 'day' } },
+          { id: 'progress-tracker', config: { enabled: true, targetValue: 2.0, unit: 'hours' } },
+        ],
+      }),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  });
+
+  await prisma.miniTaskScore.create({
+    data: {
+      miniTaskId: mt6_1.id,
+      specific: 92,
+      measurable: 95,
+      achievable: 88,
+      relevant: 90,
+      timebound: 95,
+      average: 92,
+      passed: true,
+    },
+  });
+
+  // Plugins para mt6_1
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt6_1.id,
+      pluginId: 'calendar',
+      config: JSON.stringify({ enabled: true, frequency: 'daily', alarmTimes: ['09:00', '14:00'], plannedHours: 2.0, checklistEnabled: false }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt6_1.id,
+      pluginId: 'chart',
+      config: JSON.stringify({ enabled: true, chartType: 'bar', metricType: 'horas-estudiadas', timeRange: 'day' }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt6_1.id,
+      pluginId: 'progress-tracker',
+      config: JSON.stringify({ enabled: true, targetValue: 2.0, unit: 'hours' }),
+      enabled: true,
+    },
+  });
+
+  // Entrada del journal con tiempo registrado (1 hora hasta ahora)
+  await prisma.miniTaskJournalEntry.create({
+    data: {
+      miniTaskId: mt6_1.id,
+      entryDate: new Date(),
+      notes: 'Estudié vocabulario durante 1 hora esta mañana',
+      timeSpent: 60, // 60 minutos = 1 hora
+      mood: 'positivo',
+    },
+  });
+
+  console.log('✅ Goal 6 (ACTIVE - Single Day) creada con 1 minitask desbloqueada y horas planificadas');
+
+  // ============================================
+  // GOAL 7: OTRO EJEMPLO DE GOAL DE UN SOLO DÍA CON HORAS
+  // ============================================
+  const goal7 = await prisma.goal.create({
+    data: {
+      userId: user.id,
+      title: 'Pasar 3 horas trabajando en el proyecto de diseño hoy',
+      description: 'Dedicar 3 horas completas hoy al proyecto de diseño gráfico, enfocándome en crear los mockups finales',
+      status: 'ACTIVE',
+      deadline: new Date(new Date().setHours(23, 59, 59, 999)), // Hoy
+      plannedHours: 3.0,
+      isSingleDayGoal: true,
+      createdAt: new Date(),
+    },
+  });
+
+  await prisma.smarterScore.create({
+    data: {
+      goalId: goal7.id,
+      specific: 88,
+      measurable: 92,
+      achievable: 85,
+      relevant: 90,
+      timebound: 95,
+      evaluate: 87,
+      readjust: 83,
+      average: 88.6,
+      passed: true,
+    },
+  });
+
+  // Mini-task desbloqueada con horas planificadas
+  const mt7_1 = await prisma.miniTask.create({
+    data: {
+      goalId: goal7.id,
+      title: 'Crear mockups finales del proyecto (3 horas)',
+      description: 'Diseñar y completar los mockups finales del proyecto de diseño gráfico, dedicando 3 horas continuas',
+      status: 'PENDING',
+      deadline: new Date(new Date().setHours(23, 59, 59, 999)),
+      unlocked: true,
+      plannedHours: 3.0,
+      isSingleDayTask: true,
+      metricsConfig: JSON.stringify({
+        unlocked: true,
+        unlockedAt: new Date().toISOString(),
+        plugins: [
+          { id: 'calendar', config: { enabled: true, frequency: 'daily', alarmTimes: ['10:00', '15:00'], plannedHours: 3.0, checklistEnabled: false } },
+          { id: 'chart', config: { enabled: true, chartType: 'line', metricType: 'horas-trabajadas', timeRange: 'day' } },
+          { id: 'progress-tracker', config: { enabled: true, targetValue: 3.0, unit: 'hours' } },
+          { id: 'reminder', config: { enabled: true, reminderTimes: ['10:00'] } },
+        ],
+      }),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  });
+
+  await prisma.miniTaskScore.create({
+    data: {
+      miniTaskId: mt7_1.id,
+      specific: 90,
+      measurable: 93,
+      achievable: 87,
+      relevant: 92,
+      timebound: 94,
+      average: 91.2,
+      passed: true,
+    },
+  });
+
+  // Plugins para mt7_1
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt7_1.id,
+      pluginId: 'calendar',
+      config: JSON.stringify({ enabled: true, frequency: 'daily', alarmTimes: ['10:00', '15:00'], plannedHours: 3.0, checklistEnabled: false }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt7_1.id,
+      pluginId: 'chart',
+      config: JSON.stringify({ enabled: true, chartType: 'line', metricType: 'horas-trabajadas', timeRange: 'day' }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt7_1.id,
+      pluginId: 'progress-tracker',
+      config: JSON.stringify({ enabled: true, targetValue: 3.0, unit: 'hours' }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt7_1.id,
+      pluginId: 'reminder',
+      config: JSON.stringify({ enabled: true, reminderTimes: ['10:00'] }),
+      enabled: true,
+    },
+  });
+
+  // Entrada del journal con tiempo parcial registrado (1.5 horas hasta ahora)
+  await prisma.miniTaskJournalEntry.create({
+    data: {
+      miniTaskId: mt7_1.id,
+      entryDate: new Date(),
+      notes: 'Trabajé en los mockups durante 1.5 horas esta mañana. Voy bien encaminado.',
+      timeSpent: 90, // 90 minutos = 1.5 horas
+      mood: 'positivo',
+      progressValue: 1.5,
+      progressUnit: 'horas',
+    },
+  });
+
+  console.log('✅ Goal 7 (ACTIVE - Single Day) creada con 1 minitask desbloqueada y 3 horas planificadas (1.5 horas ya registradas)');
+
+  // ============================================
+  // GOAL 8: GOAL CON PLUGIN POMODORO
+  // ============================================
+  const goal8 = await prisma.goal.create({
+    data: {
+      userId: user.id,
+      title: 'Completar capítulo del libro usando técnica Pomodoro',
+      description: 'Leer y tomar notas del capítulo 5 del libro usando sesiones Pomodoro de 25 minutos con descansos estructurados',
+      status: 'ACTIVE',
+      deadline: new Date(new Date().setDate(new Date().getDate() + 3)),
+      createdAt: new Date(),
+    },
+  });
+
+  await prisma.smarterScore.create({
+    data: {
+      goalId: goal8.id,
+      specific: 88,
+      measurable: 90,
+      achievable: 85,
+      relevant: 92,
+      timebound: 88,
+      evaluate: 87,
+      readjust: 85,
+      average: 87.9,
+      passed: true,
+    },
+  });
+
+  // Mini-task desbloqueada con plugin Pomodoro
+  const mt8_1 = await prisma.miniTask.create({
+    data: {
+      goalId: goal8.id,
+      title: 'Leer capítulo 5 con técnica Pomodoro',
+      description: 'Completar la lectura del capítulo 5 usando sesiones Pomodoro de 25 minutos, registrando progreso automáticamente',
+      status: 'IN_PROGRESS',
+      deadline: new Date(new Date().setDate(new Date().getDate() + 3)),
+      unlocked: true,
+      metricsConfig: JSON.stringify({
+        unlocked: true,
+        unlockedAt: new Date().toISOString(),
+        plugins: [
+          { id: 'calendar', config: { enabled: true, frequency: 'daily', alarmTimes: ['09:00', '14:00'], checklistEnabled: false } },
+          { id: 'chart', config: { enabled: true, chartType: 'bar', metricType: 'sesiones-pomodoro', timeRange: 'week' } },
+          { id: 'pomodoro', config: { enabled: true, workDuration: 25, shortBreakDuration: 5, longBreakDuration: 15, sessionsUntilLongBreak: 4, autoLogToJournal: true, soundEnabled: true } },
+          { id: 'progress-tracker', config: { enabled: true, targetValue: 8, unit: 'sesiones' } },
+        ],
+      }),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
+  });
+
+  await prisma.miniTaskScore.create({
+    data: {
+      miniTaskId: mt8_1.id,
+      specific: 90,
+      measurable: 92,
+      achievable: 88,
+      relevant: 90,
+      timebound: 90,
+      average: 90,
+      passed: true,
+    },
+  });
+
+  // Plugins para mt8_1
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt8_1.id,
+      pluginId: 'calendar',
+      config: JSON.stringify({ enabled: true, frequency: 'daily', alarmTimes: ['09:00', '14:00'], checklistEnabled: false }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt8_1.id,
+      pluginId: 'chart',
+      config: JSON.stringify({ enabled: true, chartType: 'bar', metricType: 'sesiones-pomodoro', timeRange: 'week' }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt8_1.id,
+      pluginId: 'pomodoro',
+      config: JSON.stringify({ 
+        enabled: true, 
+        workDuration: 25, 
+        shortBreakDuration: 5, 
+        longBreakDuration: 15, 
+        sessionsUntilLongBreak: 4, 
+        autoLogToJournal: true, 
+        soundEnabled: true 
+      }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt8_1.id,
+      pluginId: 'progress-tracker',
+      config: JSON.stringify({ enabled: true, targetValue: 8, unit: 'sesiones' }),
+      enabled: true,
+    },
+  });
+
+  // Entrada del journal con progreso parcial (en proceso) - 2 sesiones Pomodoro completadas
+  await prisma.miniTaskJournalEntry.create({
+    data: {
+      miniTaskId: mt8_1.id,
+      entryDate: new Date(),
+      notes: 'Completé 2 sesiones Pomodoro esta mañana. Voy bien encaminado con el capítulo.',
+      timeSpent: 50, // 2 sesiones de 25 minutos = 50 minutos
+      mood: 'positivo',
+      progressValue: 2,
+      progressUnit: 'sesiones',
+    },
+  });
+
+  console.log('✅ Goal 8 (ACTIVE) creada con 1 minitask desbloqueada y plugin Pomodoro (2 sesiones completadas - estado en proceso)');
+
   console.log('\n📊 Resumen del seed:');
   console.log('  - 1 Goal COMPLETADA (con score, 3 minitasks completadas, 3 checkins)');
-  console.log('  - 2 Goals ACTIVAS (con scores, minitasks mixtas, checkins, readjustments)');
+  console.log('  - 5 Goals ACTIVAS (con scores, minitasks mixtas, checkins, readjustments)');
   console.log('  - 2 Goals DRAFT (sin validar)');
-  console.log('  - Total: 5 goals, 17 minitasks, 8 checkins, 1 readjustment, 2 suggested tasks');
-  console.log('  - 4 Minitasks DESBLOQUEADAS con plugins completos:');
+  console.log('  - Total: 8 goals, 20 minitasks, 8 checkins, 1 readjustment, 2 suggested tasks');
+  console.log('  - 2 Goals de un solo día con horas planificadas:');
+  console.log('    * goal6: "Dedicar 2 horas a estudiar inglés hoy" (2 horas planificadas, 1 hora registrada)');
+  console.log('    * goal7: "Pasar 3 horas trabajando en el proyecto de diseño hoy" (3 horas planificadas, 1.5 horas registradas)');
+  console.log('  - 1 Goal con plugin Pomodoro:');
+  console.log('    * goal8: "Completar capítulo del libro usando técnica Pomodoro" (2 sesiones completadas - estado en proceso)');
+  console.log('  - 7 Minitasks DESBLOQUEADAS con plugins completos:');
   console.log('    * mt1_1: calendar, chart, progress-tracker, reminder (14 días de datos)');
   console.log('    * mt2_3: calendar (checklist diario), chart, progress-tracker, notification (21 días de datos)');
   console.log('    * mt2_unique: calendar (checklist multi-item evento único), chart (evento único)');
   console.log('    * mt3_3: calendar, chart, progress-tracker, reminder, mobile-push (28 días de datos)');
+  console.log('    * mt6_1: calendar (con plannedHours: 2h), chart, progress-tracker (seguimiento por horas)');
+  console.log('    * mt7_1: calendar (con plannedHours: 3h), chart, progress-tracker, reminder (seguimiento por horas)');
+  console.log('    * mt8_1: calendar, chart, pomodoro, progress-tracker (plugin Pomodoro con auto-logging)');
   console.log('  - Entradas del journal con datos variados para visualización');
   console.log('  - Métricas históricas para gráficas en todos los plugins');
   console.log('  - Checklist multi-item con 5 elementos (3 completados) en mt2_unique');
+  console.log('  - Estado "en proceso" en calendario: mt8_1 tiene entrada con progreso parcial (2 sesiones de 8)');
   console.log('\n🎉 Seed completado exitosamente!');
 }
 

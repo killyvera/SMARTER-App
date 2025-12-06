@@ -23,13 +23,13 @@ export function MiniTaskBoard() {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       {columns.map((column) => {
         const { data: miniTasks } = useMiniTasks({ status: column.key });
 
         return (
-          <div key={column.key} className="space-y-3">
-            <h3 className="font-semibold text-lg mb-3">{column.label}</h3>
+          <div key={column.key} className="space-y-2 sm:space-y-3">
+            <h3 className="font-semibold text-base sm:text-lg mb-2 sm:mb-3">{column.label}</h3>
             <div className="space-y-2">
               {miniTasks?.map((task) => (
                 <MiniTaskCard

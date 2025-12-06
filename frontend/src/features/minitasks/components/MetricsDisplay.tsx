@@ -2,12 +2,13 @@
 
 import { useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart3, Calendar, TrendingUp, Bell, ListChecks, Timer, Smartphone, BellRing } from 'lucide-react';
+import { BarChart3, Calendar, TrendingUp, Bell, ListChecks, Timer, Smartphone, BellRing, Clock } from 'lucide-react';
 import { BarChart, LineChart, PieChart, AreaChart, Bar, Line, Pie, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import type { MiniTaskResponse } from '@smarter-app/shared';
 import { CalendarView } from './CalendarView';
 import { ProgressTrackerView } from './ProgressTrackerView';
 import { ChecklistView } from './ChecklistView';
+import { TimeBlockingView } from './TimeBlockingView';
 import { useMiniTaskJournal } from '../hooks/useMiniTaskJournal';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { PluginSection } from '@/components/plugins/PluginSection';
@@ -59,7 +60,7 @@ const pluginInfo: Record<string, { name: string; icon: typeof Calendar; descript
 interface MetricsDisplayProps {
   miniTask: MiniTaskResponse & { 
     unlocked?: boolean;
-    metricsConfig?: string | {
+    metricsConfig?: string | null | {
       unlocked?: boolean;
       unlockedAt?: string;
       plugins?: Array<{
@@ -135,6 +136,10 @@ export function MetricsDisplay({ miniTask }: MetricsDisplayProps) {
   const calendarPlugin = activePlugins.find(p => p.pluginId === 'calendar');
   const chartPlugin = activePlugins.find(p => p.pluginId === 'chart');
   const progressPlugin = activePlugins.find(p => p.pluginId === 'progress-tracker');
+  
+  // Detectar si tiene horas planificadas (de la mini-task o del plugin calendar)
+  const plannedHours = miniTask.plannedHours || calendarPlugin?.config?.plannedHours;
+  const isSingleDayTask = miniTask.isSingleDayTask ?? false;
 
   return (
     <div className="space-y-4 mt-4">
@@ -146,6 +151,21 @@ export function MetricsDisplay({ miniTask }: MetricsDisplayProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Seguimiento por horas si tiene horas planificadas */}
+          {(plannedHours || isSingleDayTask) && (
+            <PluginSection
+              miniTaskId={miniTask.id}
+              pluginId="time-blocking"
+              title="Seguimiento por Horas"
+              icon={<Clock className="h-5 w-5 text-primary" />}
+            >
+              <TimeBlockingView
+                plannedHours={plannedHours}
+                journalEntries={journalEntries || []}
+              />
+            </PluginSection>
+          )}
+
           {/* Checklist si está habilitado */}
           {calendarPlugin && calendarPlugin.config?.checklistEnabled && (
             <PluginSection

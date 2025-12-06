@@ -13,10 +13,6 @@ import type {
   miniTaskStatusSchema,
 } from '../schemas/miniTaskSchemas';
 import type {
-  createCheckInSchema,
-  checkInResponseSchema,
-} from '../schemas/checkInSchemas';
-import type {
   registerSchema,
   loginSchema,
   authResponseSchema,
@@ -37,8 +33,6 @@ export type CreateMiniTaskInput = z.infer<typeof createMiniTaskSchema>;
 export type UpdateMiniTaskInput = z.infer<typeof updateMiniTaskSchema>;
 export type MiniTaskResponse = z.infer<typeof miniTaskResponseSchema>;
 
-export type CreateCheckInInput = z.infer<typeof createCheckInSchema>;
-export type CheckInResponse = z.infer<typeof checkInResponseSchema>;
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
@@ -53,4 +47,7 @@ export interface SuggestedMiniTask {
   description?: string;
   priority: number;
 }
+
+// Exportar tipos de plugins
+export * from './plugins';
 

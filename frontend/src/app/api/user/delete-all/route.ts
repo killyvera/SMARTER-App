@@ -26,14 +26,6 @@ export async function DELETE(request: NextRequest) {
       },
     });
     
-    await prisma.checkIn.deleteMany({
-      where: {
-        goal: {
-          userId,
-        },
-      },
-    });
-    
     await prisma.miniTask.deleteMany({
       where: {
         goal: {

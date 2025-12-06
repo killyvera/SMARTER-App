@@ -43,10 +43,10 @@ export default function DashboardPage() {
     <div className="space-y-6">
       {/* Mensaje de bienvenida */}
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold">
+        <h1 className="text-2xl sm:text-3xl font-bold">
           {getGreeting()}, {user?.email?.split('@')[0] || 'Usuario'}
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-sm sm:text-base text-muted-foreground">
           Aquí tienes un resumen de tu progreso
         </p>
       </div>

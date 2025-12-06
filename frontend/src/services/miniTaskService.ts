@@ -21,6 +21,8 @@ export async function createMiniTaskService(input: CreateMiniTaskInput) {
     title: input.title,
     description: input.description,
     deadline,
+    plannedHours: input.plannedHours,
+    isSingleDayTask: input.isSingleDayTask ?? false,
   });
 }
 
@@ -215,6 +217,8 @@ export async function updateMiniTaskService(
     description: input.description,
     deadline,
     status: input.status,
+    plannedHours: input.plannedHours,
+    isSingleDayTask: input.isSingleDayTask,
   });
 }
 
@@ -263,6 +267,8 @@ export async function unlockMiniTaskService(miniTaskId: string, userId: string) 
     title: unlockResult.improvedTitle,
     description: unlockResult.improvedDescription,
     unlocked: true,
+    isSingleDayTask: unlockResult.isSingleDayTask ?? false,
+    plannedHours: unlockResult.plannedHours,
     metricsConfig: JSON.stringify({
       unlocked: true,
       unlockedAt: new Date().toISOString(),

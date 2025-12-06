@@ -60,26 +60,26 @@ export default function MiniTaskDetailPage() {
   const isUnlocked = miniTask.unlocked ?? false;
 
   return (
-    <div className="container mx-auto p-4 max-w-6xl">
+    <div className="container mx-auto p-3 sm:p-4 md:p-6 max-w-6xl">
       <Button
         variant="ghost"
         onClick={() => router.back()}
-        className="mb-4"
+        className="mb-3 sm:mb-4"
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
         Volver
       </Button>
 
-      <Card className="mb-6">
+      <Card className="mb-4 sm:mb-6">
         <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <CardTitle className="text-2xl mb-2">{miniTask.title}</CardTitle>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-xl sm:text-2xl mb-2 break-words">{miniTask.title}</CardTitle>
               {miniTask.description && (
-                <p className="text-muted-foreground">{miniTask.description}</p>
+                <p className="text-sm sm:text-base text-muted-foreground break-words">{miniTask.description}</p>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               {!isUnlocked && (
                 <Lock className="h-5 w-5 text-muted-foreground" />
               )}
@@ -90,7 +90,7 @@ export default function MiniTaskDetailPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
             <div>
               <p className="text-sm text-muted-foreground mb-2">Estado</p>
               <StatusBadge status={miniTask.status as any} />
@@ -109,7 +109,7 @@ export default function MiniTaskDetailPage() {
             <Button
               onClick={handleUnlock}
               disabled={isUnlocking}
-              className="w-full"
+              className="w-full sm:w-auto"
             >
               <Sparkles className="h-4 w-4 mr-2" />
               {isUnlocking ? 'Desbloqueando...' : 'Desbloquear y Configurar'}
@@ -117,17 +117,21 @@ export default function MiniTaskDetailPage() {
           )}
 
           {isUnlocked && (
-            <div className="flex gap-2 mt-4">
+            <div className="flex flex-col sm:flex-row gap-2 mt-3 sm:mt-4">
               {miniTask.status === 'PENDING' && (
                 <Button
                   variant="outline"
                   onClick={() => handleStatusChange('IN_PROGRESS')}
+                  className="w-full sm:w-auto"
                 >
                   Iniciar
                 </Button>
               )}
               {miniTask.status === 'IN_PROGRESS' && (
-                <Button onClick={() => handleStatusChange('COMPLETED')}>
+                <Button 
+                  onClick={() => handleStatusChange('COMPLETED')}
+                  className="w-full sm:w-auto"
+                >
                   Completar
                 </Button>
               )}

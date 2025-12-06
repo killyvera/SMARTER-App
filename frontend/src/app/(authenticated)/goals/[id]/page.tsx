@@ -5,12 +5,11 @@ import { useParams, useRouter } from 'next/navigation';
 import { useGoal, useValidateGoal, useConfirmGoalValidation, useActivateGoal } from '@/features/goals/hooks/useGoals';
 import { SmarterScoreDisplay } from '@/features/goals/components/SmarterScoreDisplay';
 import { ValidationReview } from '@/features/goals/components/ValidationReview';
-import { CheckInHistory } from '@/features/checkins/components/CheckInHistory';
 import { useMiniTasks, useUnlockMiniTask } from '@/features/minitasks/hooks/useMiniTasks';
 import { MiniTaskCard } from '@/features/minitasks/components/MiniTaskCard';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle2, Zap, Plus, Calendar, Sparkles } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Zap, Plus, Sparkles } from 'lucide-react';
 
 type ValidationState = 'idle' | 'validating' | 'reviewing' | 'confirming';
 
@@ -162,19 +161,19 @@ export default function GoalDetailPage() {
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
-      <Button asChild variant="ghost" className="mb-4">
+    <div className="container mx-auto p-3 sm:p-4 md:p-6 max-w-4xl">
+      <Button asChild variant="ghost" className="mb-3 sm:mb-4">
         <Link href="/goals">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Volver
         </Link>
       </Button>
 
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <div>
-          <h1 className="text-3xl font-bold mb-2">{goal.title}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">{goal.title}</h1>
           {goal.description && (
-            <p className="text-muted-foreground">{goal.description}</p>
+            <p className="text-sm sm:text-base text-muted-foreground">{goal.description}</p>
           )}
         </div>
 
@@ -194,9 +193,6 @@ export default function GoalDetailPage() {
               readjust: validationData.previewScores.readjust,
               average: validationData.previewAverage,
               passed: validationData.previewPassed,
-              id: '',
-              goalId: id,
-              createdAt: new Date(),
             }}
             feedback={validationData.feedback}
             suggestedTitle={validationData.suggestedTitle}
@@ -216,11 +212,12 @@ export default function GoalDetailPage() {
         )}
 
         {goal.status === 'DRAFT' && validationState !== 'reviewing' && (
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
             {!goal.smarterScore && (
               <Button 
                 onClick={handleValidate} 
                 disabled={validateGoal.isPending || validationState === 'confirming'}
+                className="w-full sm:w-auto"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
                 {validateGoal.isPending ? 'Validando...' : 'Validar con SMARTER'}
@@ -232,6 +229,7 @@ export default function GoalDetailPage() {
                 onClick={handleActivate}
                 disabled={activateGoal.isPending}
                 variant="default"
+                className="w-full sm:w-auto"
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 {activateGoal.isPending ? 'Activando...' : 'Activar Meta'}
@@ -240,11 +238,11 @@ export default function GoalDetailPage() {
           </div>
         )}
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">MiniTasks</h2>
-              <Button asChild size="sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
+              <h2 className="text-lg sm:text-xl font-semibold">MiniTasks</h2>
+              <Button asChild size="sm" className="w-full sm:w-auto">
                 <Link href={`/goals/${id}/minitasks/new`}>
                   <Plus className="h-4 w-4 mr-2" />
                   Nueva
@@ -270,18 +268,6 @@ export default function GoalDetailPage() {
             </div>
           </div>
 
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold">Check-ins</h2>
-              <Button asChild size="sm">
-                <Link href={`/goals/${id}/checkins/new`}>
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Nuevo
-                </Link>
-              </Button>
-            </div>
-            <CheckInHistory goalId={id} />
-          </div>
         </div>
       </div>
     </div>

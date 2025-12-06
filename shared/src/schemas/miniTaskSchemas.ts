@@ -7,6 +7,8 @@ export const createMiniTaskSchema = z.object({
   title: z.string().min(1, 'El título es requerido').max(200),
   description: z.string().max(500).optional(),
   deadline: z.string().datetime().optional().or(z.date().optional()),
+  plannedHours: z.number().positive().optional(),
+  isSingleDayTask: z.boolean().optional(),
 });
 
 export const updateMiniTaskSchema = z.object({
@@ -14,6 +16,8 @@ export const updateMiniTaskSchema = z.object({
   description: z.string().max(500).optional(),
   deadline: z.string().datetime().optional().or(z.date().optional()),
   status: miniTaskStatusSchema.optional(),
+  plannedHours: z.number().positive().optional(),
+  isSingleDayTask: z.boolean().optional(),
 });
 
 export const miniTaskScoreSchema = z.object({
@@ -34,6 +38,8 @@ export const miniTaskResponseSchema = z.object({
   status: miniTaskStatusSchema,
   deadline: z.date().nullable(),
   unlocked: z.boolean().optional(),
+  plannedHours: z.number().nullable().optional(),
+  isSingleDayTask: z.boolean().optional(),
   metricsConfig: z.string().nullable().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),

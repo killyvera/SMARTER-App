@@ -173,7 +173,7 @@ export function ProgressTrackerView({
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Restante:</span>
             <span className="font-medium">
-              {Math.max(0, (finalTargetValue - currentProgress).toFixed(1))} {finalUnit}
+              {Math.max(0, finalTargetValue - currentProgress).toFixed(1)} {finalUnit}
             </span>
           </div>
         </div>
@@ -201,19 +201,19 @@ export function ProgressTrackerView({
         </div>
 
         {/* Estadísticas */}
-        <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t">
           <div>
             <p className="text-xs text-muted-foreground mb-1">Entradas registradas</p>
-            <p className="text-lg font-semibold">{journalEntries.length}</p>
+            <p className="text-base sm:text-lg font-semibold">{journalEntries.length}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-1">Promedio diario</p>
-            <p className="text-lg font-semibold">
+            <p className="text-base sm:text-lg font-semibold">
               {averageDaily.toFixed(1)} {finalUnit}
             </p>
           </div>
           {estimatedDaysRemaining !== null && (
-            <div className="col-span-2">
+            <div className="col-span-1 sm:col-span-2">
               <p className="text-xs text-muted-foreground mb-1">
                 {estimatedDaysRemaining === 0 
                   ? '¡Objetivo alcanzado! 🎉' 

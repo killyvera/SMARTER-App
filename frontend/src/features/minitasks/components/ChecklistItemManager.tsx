@@ -160,7 +160,7 @@ export function ChecklistItemManager({
         {items.map((item) => (
           <div
             key={item.id}
-            className={`flex items-center gap-3 p-3 border rounded-lg transition-colors ${
+            className={`flex items-center gap-2 sm:gap-3 p-2 sm:p-3 border rounded-lg transition-colors ${
               item.completed ? 'bg-green-50 border-green-200' : 'bg-card'
             }`}
           >
@@ -168,10 +168,10 @@ export function ChecklistItemManager({
               checked={item.completed}
               onCheckedChange={() => toggleItem.mutate(item.id)}
               disabled={toggleItem.isPending}
-              className="h-5 w-5"
+              className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0"
             />
-            <label className="flex-1 cursor-pointer">
-              <div className={`font-medium ${item.completed ? 'line-through text-muted-foreground' : ''}`}>
+            <label className="flex-1 cursor-pointer min-w-0">
+              <div className={`text-sm sm:text-base font-medium break-words ${item.completed ? 'line-through text-muted-foreground' : ''}`}>
                 {item.label}
               </div>
               {item.completedAt && (
@@ -185,16 +185,16 @@ export function ChecklistItemManager({
               size="sm"
               onClick={() => deleteItem.mutate(item.id)}
               disabled={deleteItem.isPending}
-              className="h-8 w-8 p-0"
+              className="h-7 w-7 sm:h-8 sm:w-8 p-0 flex-shrink-0"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
           </div>
         ))}
       </div>
 
       {/* Agregar nuevo item */}
-      <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row gap-2">
         <Input
           value={newItemLabel}
           onChange={(e) => setNewItemLabel(e.target.value)}
@@ -210,6 +210,7 @@ export function ChecklistItemManager({
           onClick={handleAddItem}
           disabled={!newItemLabel.trim() || createItem.isPending}
           size="sm"
+          className="w-full sm:w-auto"
         >
           <Plus className="h-4 w-4 mr-2" />
           Agregar

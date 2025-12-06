@@ -12,6 +12,8 @@ export const createGoalSchema = z.object({
   title: z.string().min(1, 'El título es requerido').max(200),
   description: z.string().max(1000).optional(),
   deadline: datetimeLocalSchema.or(z.string().datetime().optional()).or(z.date().optional()),
+  plannedHours: z.number().positive().optional(),
+  isSingleDayGoal: z.boolean().optional(),
 });
 
 export const updateGoalSchema = createGoalSchema.partial();
@@ -35,6 +37,8 @@ export const goalResponseSchema = z.object({
   description: z.string().nullable(),
   status: goalStatusSchema,
   deadline: z.date().nullable(),
+  plannedHours: z.number().nullable().optional(),
+  isSingleDayGoal: z.boolean().optional(),
   createdAt: z.date(),
   updatedAt: z.date(),
   smarterScore: smarterScoreSchema.nullable().optional(),

@@ -3,7 +3,7 @@ import type { MiniTask } from '@prisma/client';
 
 export async function createMiniTask(
   goalId: string,
-  data: { title: string; description?: string; deadline?: Date }
+  data: { title: string; description?: string; deadline?: Date; plannedHours?: number; isSingleDayTask?: boolean }
 ): Promise<MiniTask> {
   return prisma.miniTask.create({
     data: {
@@ -11,6 +11,8 @@ export async function createMiniTask(
       title: data.title,
       description: data.description,
       deadline: data.deadline,
+      plannedHours: data.plannedHours,
+      isSingleDayTask: data.isSingleDayTask ?? false,
       status: 'DRAFT',
     },
   });
@@ -257,6 +259,8 @@ export async function updateMiniTask(
     status?: string;
     unlocked?: boolean;
     metricsConfig?: string;
+    plannedHours?: number;
+    isSingleDayTask?: boolean;
   }
 ): Promise<MiniTask> {
   return prisma.miniTask.update({

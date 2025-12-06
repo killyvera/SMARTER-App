@@ -60,7 +60,6 @@ export default function SettingsPage() {
                 <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
                   <li>Todas tus metas (Goals)</li>
                   <li>Todas tus MiniTasks</li>
-                  <li>Todos tus CheckIns</li>
                   <li>Todos tus ajustes (Readjustments)</li>
                   <li>Todos los scores y validaciones</li>
                 </ul>

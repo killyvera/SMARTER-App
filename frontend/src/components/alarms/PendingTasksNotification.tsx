@@ -39,32 +39,32 @@ export function PendingTasksNotification() {
   return (
     <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-orange-900 dark:text-orange-100">
-            <Bell className="h-5 w-5" />
-            Tareas Pendientes de Hoy
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-orange-900 dark:text-orange-100">
+            <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="truncate">Tareas Pendientes de Hoy</span>
           </CardTitle>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => useAlarmStore.getState().clearAll()}
-            className="h-8 w-8 p-0"
+            className="h-7 w-7 sm:h-8 sm:w-8 p-0 flex-shrink-0"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3 w-3 sm:h-4 sm:w-4" />
           </Button>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
+        <div className="space-y-2 sm:space-y-3">
           {pendingTasks.slice(0, 5).map((task) => (
             <div
               key={task.id}
-              className="flex items-start justify-between rounded-lg border bg-white p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer dark:bg-gray-800"
+              className="flex items-start justify-between gap-2 rounded-lg border bg-white p-2 sm:p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer dark:bg-gray-800"
               onClick={() => handleTaskClick(task.id)}
             >
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h4 className="font-medium text-sm truncate">{task.title}</h4>
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
+                  <h4 className="font-medium text-xs sm:text-sm truncate">{task.title}</h4>
                   {task.checklistEnabled && (
                     <div className="flex items-center gap-1">
                       {task.checklistCompleted ? (

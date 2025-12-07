@@ -53,21 +53,29 @@ export function StickyNote({ miniTask, style }: StickyNoteProps) {
 
   return (
     <div
-      className="relative w-48 h-48 cursor-move transition-transform hover:scale-105 flex flex-col shadow-lg"
+      className="relative w-full h-full flex flex-col shadow-lg overflow-hidden"
       style={{
         backgroundColor: baseColor,
+        aspectRatio: '1 / 1',
+        minHeight: 0,
         ...style,
       }}
     >
       {/* Título - Ocupa casi todo el espacio, texto grande */}
-      <div className="flex-1 flex items-center justify-center p-3 pb-2">
+      <div className="flex-1 flex items-center justify-center p-3 pb-2 min-h-0 overflow-hidden">
         <h3 
           className="font-bold text-gray-900 text-center break-words"
           style={{
-            fontSize: 'clamp(1rem, 4vw, 1.75rem)',
-            lineHeight: '1.1',
+            fontSize: 'clamp(0.875rem, 2.5vw, 2.5rem)',
+            lineHeight: '1.2',
             wordBreak: 'break-word',
             overflowWrap: 'break-word',
+            display: '-webkit-box',
+            WebkitLineClamp: 4,
+            WebkitBoxOrient: 'vertical',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            maxHeight: '100%',
           }}
         >
           {miniTask.title}
@@ -76,20 +84,24 @@ export function StickyNote({ miniTask, style }: StickyNoteProps) {
 
       {/* Fila inferior: Estado (medalla) y Barra de progreso */}
       <div className="px-3 pb-3 flex items-center gap-2">
-        {/* Estado como medalla - 70% del tamaño */}
+        {/* Estado como medalla - 70% del tamaño con sombra oscura y texto blanco */}
         <span 
-          className="rounded-full font-semibold text-gray-800 uppercase bg-white/70 shrink-0"
+          className="rounded-full font-semibold uppercase shrink-0"
           style={{
-            padding: '0.175rem 0.35rem', // 70% de px-2 py-1 (0.5rem = 8px, 70% = 5.6px ≈ 0.35rem)
-            fontSize: '0.525rem', // 70% de text-xs (0.75rem, 70% = 0.525rem)
+            padding: 'clamp(0.175rem, 0.5vw, 0.5rem) clamp(0.35rem, 1vw, 0.75rem)',
+            fontSize: 'clamp(0.525rem, 1.2vw, 0.875rem)',
             lineHeight: '1',
+            color: 'rgba(255, 255, 255, 0.85)', // Texto blanco con opacidad reducida
+            textShadow: '0 1px 2px rgba(0, 0, 0, 0.4), 0 0 4px rgba(0, 0, 0, 0.3)',
+            boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.3)',
+            backgroundColor: 'rgba(0, 0, 0, 0.25)',
           }}
         >
           {miniTask.status}
         </span>
         
         {/* Barra de progreso - Delgada, centrada y redondeada */}
-        <div className="flex-1 h-2 bg-gray-300 rounded-full relative overflow-hidden">
+        <div className="flex-1 bg-gray-300 rounded-full relative overflow-hidden" style={{ height: 'clamp(0.5rem, 1.2vw, 0.75rem)' }}>
           {/* Parte completada */}
           <div
             className="h-full rounded-full transition-all duration-300"

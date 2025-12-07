@@ -308,12 +308,12 @@ Lo importante es que puedas comparar tu estado actual con tu estado objetivo.`,
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center gap-3 mb-6">
-        <HelpCircle className="h-8 w-8 text-primary" />
-        <div>
-          <h1 className="text-3xl font-bold">SMARTER FAQ</h1>
-          <p className="text-muted-foreground">
+    <div className="w-full max-w-full py-4 sm:py-6 space-y-4 sm:space-y-6">
+      <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+        <HelpCircle className="h-6 w-6 sm:h-8 sm:w-8 text-primary flex-shrink-0" />
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold">SMARTER FAQ</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Preguntas frecuentes sobre el método SMARTER organizadas por componente
           </p>
         </div>
@@ -335,10 +335,20 @@ Lo importante es que puedas comparar tu estado actual con tu estado objetivo.`,
                     <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary text-primary-foreground text-2xl font-bold flex-shrink-0">
                       {section.letter}
                     </div>
-                    <div className="flex-1 text-left">
-                      <CardTitle className="text-2xl flex items-center gap-2">
-                        <Icon className="h-6 w-6" />
-                        {section.name}
+                    <div className="flex-1 text-left min-w-0">
+                      <CardTitle 
+                        className="line-clamp-2" 
+                        style={{
+                          fontSize: 'clamp(0.875rem, 2vw, 1.5rem)',
+                          lineHeight: '1.3',
+                          overflow: 'hidden',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                        }}
+                      >
+                        <Icon className="h-[1.2em] w-[1.2em] inline-block align-middle mr-2 flex-shrink-0" style={{ verticalAlign: 'middle' }} />
+                        <span className="break-words inline">{section.name}</span>
                       </CardTitle>
                       <CardDescription className="text-base mt-2">
                         {section.description}

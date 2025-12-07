@@ -1,9 +1,18 @@
 'use client';
 
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookOpen, CheckCircle2, Target, TrendingUp, Clock, RefreshCw, Eye } from 'lucide-react';
+import { BookOpen, CheckCircle2, Target, TrendingUp, Clock, RefreshCw, Eye, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function SmarterDetailPage() {
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+
+  const toggleSection = (letter: string) => {
+    setOpenSections((prev) => ({
+      ...prev,
+      [letter]: !prev[letter],
+    }));
+  };
   const smarterComponents = [
     {
       letter: 'S',
@@ -207,13 +216,13 @@ export default function SmarterDetailPage() {
   ];
 
   return (
-    <div className="container mx-auto py-6 space-y-8">
+    <div className="w-full max-w-full py-4 sm:py-6 space-y-6 sm:space-y-8">
       <div className="space-y-2">
-        <h1 className="text-4xl font-bold flex items-center gap-3">
-          <BookOpen className="h-10 w-10 text-primary" />
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold flex items-center gap-2 sm:gap-3">
+          <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 text-primary flex-shrink-0" />
           SMARTER: Guía Completa
         </h1>
-        <p className="text-muted-foreground text-lg">
+        <p className="text-muted-foreground text-sm sm:text-base md:text-lg">
           Una guía detallada sobre el método SMARTER para establecer y alcanzar objetivos efectivos
         </p>
       </div>
@@ -238,29 +247,54 @@ export default function SmarterDetailPage() {
 
       {/* Componentes SMARTER */}
       <div className="space-y-6">
-        <h2 className="text-3xl font-bold">Los 7 Componentes de SMARTER</h2>
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold">Los 7 Componentes de SMARTER</h2>
         
         {smarterComponents.map((component, index) => {
           const Icon = component.icon;
+          const isOpen = openSections[component.letter] || false;
+          
           return (
             <Card key={index} className="overflow-hidden">
-              <CardHeader className="bg-primary/10">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary text-primary-foreground text-2xl font-bold">
-                    {component.letter}
+              <button
+                onClick={() => toggleSection(component.letter)}
+                className="w-full"
+              >
+                <CardHeader className="bg-primary/10 hover:bg-primary/15 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center justify-center w-16 h-16 rounded-full bg-primary text-primary-foreground text-2xl font-bold flex-shrink-0">
+                      {component.letter}
+                    </div>
+                    <div className="flex-1 text-left min-w-0">
+                      <CardTitle 
+                        className="line-clamp-2" 
+                        style={{
+                          fontSize: 'clamp(0.875rem, 2vw, 1.5rem)',
+                          lineHeight: '1.3',
+                          overflow: 'hidden',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                        }}
+                      >
+                        <Icon className="h-[1.2em] w-[1.2em] inline-block align-middle mr-2 flex-shrink-0" style={{ verticalAlign: 'middle' }} />
+                        <span className="break-words inline">{component.name}</span>
+                      </CardTitle>
+                      <CardDescription className="text-base mt-2">
+                        {component.description}
+                      </CardDescription>
+                    </div>
+                    <div className="flex-shrink-0">
+                      {isOpen ? (
+                        <ChevronUp className="h-6 w-6 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="h-6 w-6 text-muted-foreground" />
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-2xl flex items-center gap-2">
-                      <Icon className="h-6 w-6" />
-                      {component.name}
-                    </CardTitle>
-                    <CardDescription className="text-base mt-2">
-                      {component.description}
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-6 space-y-6">
+                </CardHeader>
+              </button>
+              {isOpen && (
+                <CardContent className="pt-6 space-y-6 animate-in slide-in-from-top-2 duration-200">
                 {/* Preguntas clave */}
                 <div>
                   <h3 className="font-semibold text-lg mb-3">Preguntas clave para este componente:</h3>
@@ -305,7 +339,8 @@ export default function SmarterDetailPage() {
                     ))}
                   </ul>
                 </div>
-              </CardContent>
+                </CardContent>
+              )}
             </Card>
           );
         })}

@@ -51,7 +51,7 @@ export function Sidebar() {
                 href={item.href}
                 onClick={() => {
                   // Cerrar sidebar en mobile al hacer click
-                  if (window.innerWidth < 768) {
+                  if (typeof window !== 'undefined' && window.innerWidth < 768) {
                     closeSidebar();
                   }
                 }}

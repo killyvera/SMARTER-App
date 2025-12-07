@@ -49,18 +49,18 @@ export function GoalCard({ goal }: GoalCardProps) {
 
   return (
     <Link href={`/goals/${goal.id}`}>
-      <div className="bg-card border rounded-lg p-4 hover:shadow-md transition-shadow">
-        <div className="flex items-start justify-between mb-2">
-          <h3 className="font-semibold text-lg flex-1">{goal.title}</h3>
+      <div className="bg-card border rounded-lg p-3 sm:p-4 hover:shadow-md transition-shadow w-full">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <h3 className="font-semibold text-base sm:text-lg flex-1 break-words overflow-wrap-anywhere">{goal.title}</h3>
           <span
-            className={`px-2 py-1 rounded text-xs font-medium ${statusColors[goal.status]}`}
+            className={`px-2 py-1 rounded text-xs font-medium flex-shrink-0 ${statusColors[goal.status]}`}
           >
             {statusLabels[goal.status]}
           </span>
         </div>
 
         {goal.description && (
-          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+          <p className="text-sm text-muted-foreground mb-3 line-clamp-2 break-words overflow-wrap-anywhere">
             {goal.description}
           </p>
         )}
@@ -77,11 +77,11 @@ export function GoalCard({ goal }: GoalCardProps) {
           </div>
         )}
 
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground">
           {goal.deadline && (
             <div className="flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              <span>
+              <Clock className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="whitespace-nowrap">
                 {format(new Date(goal.deadline), 'dd MMM yyyy', { locale: es })}
               </span>
             </div>
@@ -89,14 +89,14 @@ export function GoalCard({ goal }: GoalCardProps) {
 
           {goal.smarterScore && (
             <div className="flex items-center gap-1">
-              <FileText className="h-4 w-4" />
+              <FileText className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
               <span>Score: {goal.smarterScore.average.toFixed(0)}</span>
             </div>
           )}
 
           {goal.status === 'ACTIVE' && (
             <div className="flex items-center gap-1 text-green-600">
-              <CheckCircle2 className="h-4 w-4" />
+              <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
               <span>Activa</span>
             </div>
           )}

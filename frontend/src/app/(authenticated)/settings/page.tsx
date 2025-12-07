@@ -198,10 +198,10 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 w-full max-w-full">
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold">Configuración</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl sm:text-3xl font-bold">Configuración</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
           Gestiona tu cuenta y configuración
         </p>
       </div>
@@ -236,12 +236,12 @@ export default function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="biometric-toggle" className="text-base">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+              <div className="space-y-0.5 flex-1 min-w-0">
+                <Label htmlFor="biometric-toggle" className="text-sm sm:text-base">
                   Activar autenticación biométrica
                 </Label>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   {biometricEnabled && hasCredentials
                     ? 'Puedes iniciar sesión con PIN, huella digital, reconocimiento facial u otro método biométrico'
                     : biometricEnabled && !hasCredentials
@@ -300,25 +300,25 @@ export default function SettingsPage() {
                       return (
                         <div
                           key={cred.id}
-                          className="flex items-center justify-between rounded-lg border p-3"
+                          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-3 rounded-lg border p-3"
                         >
-                          <div className="flex items-center gap-3 flex-1">
-                            <Icon className="h-5 w-5 text-muted-foreground" />
+                          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0 w-full sm:w-auto">
+                            <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground flex-shrink-0" />
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">
+                              <p className="text-xs sm:text-sm font-medium truncate">
                                 {cred.deviceName}
                               </p>
-                              <p className="text-xs text-muted-foreground">
+                              <p className="text-xs text-muted-foreground truncate">
                                 {typeLabel}
                               </p>
                               {cred.lastUsedAt && (
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-xs text-muted-foreground truncate">
                                   Último uso: {new Date(cred.lastUsedAt).toLocaleDateString()}
                                 </p>
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-shrink-0 w-full sm:w-auto justify-end sm:justify-start">
                             <Button
                               variant="ghost"
                               size="sm"

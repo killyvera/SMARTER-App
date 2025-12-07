@@ -10,11 +10,11 @@ export default function GoalsPage() {
   const { data: goals, isLoading } = useGoals();
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Mis Metas</h1>
-        <Button asChild>
-          <Link href="/goals/new">
+    <div className="w-full max-w-full">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold">Mis Metas</h1>
+        <Button asChild className="w-full sm:w-auto">
+          <Link href="/goals/new" className="flex items-center justify-center">
             <Plus className="h-4 w-4 mr-2" />
             Nueva Meta
           </Link>

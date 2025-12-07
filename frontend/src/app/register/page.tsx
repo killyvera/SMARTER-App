@@ -63,21 +63,21 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8 rounded-lg border bg-card p-8 shadow-sm">
+    <div className="flex min-h-screen items-center justify-center p-3 sm:p-4">
+      <div className="w-full max-w-md space-y-6 sm:space-y-8 rounded-lg border bg-card p-4 sm:p-6 md:p-8 shadow-sm">
         <div className="text-center">
-          <div className="flex justify-center mb-4">
+          <div className="flex justify-center mb-3 sm:mb-4">
             <Image
               src="/smarterIcon.png"
               alt="Smarter App Logo"
               width={120}
               height={120}
-              className="object-contain"
+              className="object-contain w-20 h-20 sm:w-24 sm:h-24 md:w-30 md:h-30"
               priority
             />
           </div>
-          <h1 className="text-3xl font-bold">Smarter App</h1>
-          <p className="mt-2 text-muted-foreground">
+          <h1 className="text-2xl sm:text-3xl font-bold">Smarter App</h1>
+          <p className="mt-2 text-sm sm:text-base text-muted-foreground">
             Crea una cuenta para comenzar
           </p>
         </div>

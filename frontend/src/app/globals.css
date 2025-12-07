@@ -109,21 +109,199 @@
   letter-spacing: 0.02em;
 }
 
-.cyberpunk h1,
-.cyberpunk h2,
-.cyberpunk h3,
-.cyberpunk h4,
-.cyberpunk h5,
+/* Cabeceras escaladas con colores neón variados */
+.cyberpunk h1 {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: clamp(1.75rem, 5vw, 3.5rem) !important;
+  color: hsl(var(--primary)) !important;
+  text-shadow: 
+    0 0 10px hsl(var(--primary) / 0.8),
+    0 0 20px hsl(var(--primary) / 0.6),
+    0 0 30px hsl(var(--primary) / 0.4);
+}
+
+.cyberpunk h2 {
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  font-size: clamp(1.5rem, 4vw, 2.75rem) !important;
+  color: hsl(var(--secondary)) !important;
+  text-shadow: 
+    0 0 8px hsl(var(--secondary) / 0.8),
+    0 0 16px hsl(var(--secondary) / 0.6);
+}
+
+.cyberpunk h3 {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: clamp(1.25rem, 3.5vw, 2.25rem) !important;
+  color: hsl(var(--accent)) !important;
+  text-shadow: 
+    0 0 6px hsl(var(--accent) / 0.8),
+    0 0 12px hsl(var(--accent) / 0.6);
+}
+
+.cyberpunk h4 {
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: clamp(1.125rem, 3vw, 1.875rem) !important;
+  color: hsl(var(--primary)) !important;
+  text-shadow: 0 0 5px hsl(var(--primary) / 0.7);
+}
+
+/* Excepción: h3 y h4 en cards de goals y minitasks - estilo exacto de goals */
+.cyberpunk .bg-card.border.rounded-lg h3.font-semibold.text-lg,
+.cyberpunk .bg-card.border.rounded-lg h3.font-semibold,
+.cyberpunk .bg-card.border.rounded-lg h3,
+.cyberpunk .bg-card.border.rounded-lg.cursor-pointer h4.font-medium.text-base,
+.cyberpunk .bg-card.border.rounded-lg h4.font-medium,
+.cyberpunk .bg-card h3.font-semibold.text-lg,
+.cyberpunk .bg-card h4.font-medium.text-base {
+  text-transform: none !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em !important;
+  font-size: 1.125rem !important;
+  color: hsl(var(--primary)) !important;
+  text-shadow: 
+    0 0 6px hsl(var(--primary) / 0.7),
+    0 0 12px hsl(var(--primary) / 0.5) !important;
+  margin-bottom: 0.5rem !important;
+}
+
+/* Texto pequeño en cards (estados, tipos) - igual que goals */
+.cyberpunk .bg-card.border.rounded-lg span.text-xs,
+.cyberpunk .bg-card.border.rounded-lg.cursor-pointer span.text-xs,
+.cyberpunk .bg-card span.text-xs.text-muted-foreground {
+  font-size: 0.75rem !important;
+  font-weight: 400 !important;
+  color: hsl(var(--secondary)) !important;
+  text-shadow: 
+    0 0 3px hsl(var(--secondary) / 0.6),
+    0 0 6px hsl(var(--secondary) / 0.4) !important;
+}
+
+.cyberpunk h5 {
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: clamp(1rem, 2.5vw, 1.5rem) !important;
+  color: hsl(var(--secondary)) !important;
+  text-shadow: 0 0 4px hsl(var(--secondary) / 0.7);
+}
+
 .cyberpunk h6 {
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  font-size: clamp(0.875rem, 2vw, 1.25rem) !important;
+  color: hsl(var(--accent)) !important;
+  text-shadow: 0 0 3px hsl(var(--accent) / 0.7);
+}
+
+/* Párrafos con letra más destacada */
+.cyberpunk p {
+  font-size: clamp(1rem, 2vw, 1.125rem) !important;
+  line-height: 1.7 !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.03em;
+  color: hsl(var(--foreground)) !important;
+  text-shadow: 0 0 2px hsl(var(--primary) / 0.3);
+}
+
+.cyberpunk .text-sm {
+  font-size: clamp(0.875rem, 1.75vw, 1rem) !important;
+  font-weight: 500 !important;
+}
+
+.cyberpunk .text-base {
+  font-size: clamp(1rem, 2vw, 1.125rem) !important;
+  font-weight: 500 !important;
+}
+
+.cyberpunk .text-lg {
+  font-size: clamp(1.125rem, 2.5vw, 1.25rem) !important;
+  font-weight: 500 !important;
 }
 
 .cyberpunk button,
 .cyberpunk .font-semibold,
 .cyberpunk .font-bold {
   letter-spacing: 0.03em;
+  font-weight: 600 !important;
+}
+
+/* Estilos para minitasks en tema cyberpunk - usando estilo exacto de goals */
+/* Títulos de goals (font-semibold text-lg) - referencia */
+.cyberpunk .bg-card h3.font-semibold.text-lg,
+.cyberpunk .bg-card h3.font-semibold {
+  font-size: clamp(1.125rem, 2.5vw, 1.5rem) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.03em !important;
+  color: hsl(var(--primary)) !important;
+  text-shadow: 
+    0 0 8px hsl(var(--primary) / 0.8),
+    0 0 16px hsl(var(--primary) / 0.6) !important;
+  margin-bottom: 0.5rem !important;
+}
+
+/* CardTitle de minitasks - más grande */
+.cyberpunk [class*="CardTitle"],
+.cyberpunk .bg-card [class*="CardTitle"] {
+  font-size: clamp(1.25rem, 3vw, 1.75rem) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.04em !important;
+  color: hsl(var(--primary)) !important;
+  text-shadow: 
+    0 0 10px hsl(var(--primary) / 0.8),
+    0 0 20px hsl(var(--primary) / 0.6) !important;
+  margin-bottom: 0.75rem !important;
+}
+
+/* Descripción de minitasks y goals - igual estilo (text-sm text-muted-foreground) */
+.cyberpunk .bg-card.border.rounded-lg p.text-sm.text-muted-foreground,
+.cyberpunk .bg-card p.text-sm.text-muted-foreground,
+.cyberpunk .bg-card p[class*="text-sm"][class*="text-muted-foreground"],
+.cyberpunk [class*="CardHeader"] p.text-sm.text-muted-foreground {
+  font-size: 0.875rem !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.01em !important;
+  color: hsl(var(--secondary)) !important;
+  text-shadow: 
+    0 0 4px hsl(var(--secondary) / 0.6),
+    0 0 8px hsl(var(--secondary) / 0.4) !important;
+  line-height: 1.5 !important;
+  margin-bottom: 0.75rem !important;
+}
+
+/* Descripción específica después de CardTitle */
+.cyberpunk [class*="CardHeader"] p.text-muted-foreground,
+.cyberpunk [class*="CardHeader"] p[class*="text-sm"],
+.cyberpunk [class*="CardHeader"] p[class*="text-base"] {
+  font-size: clamp(0.875rem, 1.75vw, 1rem) !important;
+  font-weight: 400 !important;
+  color: hsl(var(--accent)) !important;
+  text-shadow: 
+    0 0 5px hsl(var(--accent) / 0.7),
+    0 0 10px hsl(var(--accent) / 0.5) !important;
+  line-height: 1.6 !important;
+}
+
+/* Texto pequeño (estados, badges, metadata) - igual que goals */
+.cyberpunk .bg-card.border.rounded-lg span.text-xs,
+.cyberpunk .bg-card.border.rounded-lg.cursor-pointer span.text-xs,
+.cyberpunk .bg-card span.text-xs.text-muted-foreground,
+.cyberpunk .bg-card [class*="text-xs"][class*="text-muted-foreground"],
+.cyberpunk .bg-card .text-muted-foreground:not(p):not(h3):not(h4) {
+  font-size: 0.75rem !important;
+  font-weight: 400 !important;
+  color: hsl(var(--secondary)) !important;
+  text-shadow: 
+    0 0 3px hsl(var(--secondary) / 0.6),
+    0 0 6px hsl(var(--secondary) / 0.4) !important;
 }
 
 /* Efecto Glitch para tema cyberpunk - Variación 1: Glitch básico */
@@ -373,6 +551,7 @@
 .cyberpunk.glitch-active-3 * {
   animation: pixelate var(--glitch-duration) steps(4, end) both;
 }
+
 
 @layer base {
   * {

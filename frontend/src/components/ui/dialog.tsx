@@ -81,3 +81,15 @@ export function DialogDescription({ children, className, ...props }: DialogDescr
   );
 }
 
+interface DialogFooterProps extends React.HTMLAttributes<HTMLDivElement> {
+  children: React.ReactNode;
+}
+
+export function DialogFooter({ children, className, ...props }: DialogFooterProps) {
+  return (
+    <div className={cn('flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 mt-4', className)} {...props}>
+      {children}
+    </div>
+  );
+}
+

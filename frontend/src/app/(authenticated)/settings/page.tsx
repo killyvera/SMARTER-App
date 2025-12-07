@@ -1,18 +1,163 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { apiRequest } from '@/lib/api';
-import { AlertTriangle, Trash2 } from 'lucide-react';
+import { AlertTriangle, Trash2, Fingerprint, Smartphone, Monitor, Power, PowerOff } from 'lucide-react';
+import { useBiometric } from '@/hooks/useBiometric';
+import { BiometricSetupDialog } from '@/components/biometric/BiometricSetupDialog';
 
 export default function SettingsPage() {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const router = useRouter();
+  const { isAvailable, registerBiometric } = useBiometric();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [isBiometricLoading, setIsBiometricLoading] = useState(false);
+  const [showSetupDialog, setShowSetupDialog] = useState(false);
+  const [hasCredentials, setHasCredentials] = useState(false);
+  const [credentials, setCredentials] = useState<Array<{
+    id: string;
+    credentialId: string;
+    deviceName: string;
+    authenticatorType: string;
+    enabled: boolean;
+    createdAt: string;
+    lastUsedAt: string | null;
+  }>>([]);
+  const [loadingCredentials, setLoadingCredentials] = useState(false);
+
+  // Cargar estado de biometría y credenciales
+  useEffect(() => {
+    const loadBiometricStatus = async () => {
+      if (!user?.email) return;
+
+      try {
+        const status = await apiRequest<{
+          biometricEnabled: boolean;
+          hasCredentials: boolean;
+          hasEnabledCredentials: boolean;
+          totalCredentials: number;
+          enabledCredentials: number;
+          credentials: Array<{
+            id: string;
+            deviceName: string;
+            authenticatorType: string;
+            enabled: boolean;
+          }>;
+        }>('/auth/biometric/status', {
+          method: 'POST',
+          body: JSON.stringify({ email: user.email }),
+        });
+        setBiometricEnabled(status.biometricEnabled);
+        setHasCredentials(status.hasCredentials);
+        
+        // Cargar detalles completos de credenciales
+        if (status.hasCredentials) {
+          await loadCredentials();
+        }
+      } catch (error) {
+        console.error('Error al cargar estado de biometría:', error);
+      }
+    };
+
+    loadBiometricStatus();
+  }, [user]);
+
+  const loadCredentials = async () => {
+    setLoadingCredentials(true);
+    try {
+      const response = await apiRequest<{
+        credentials: Array<{
+          id: string;
+          credentialId: string;
+          deviceName: string;
+          authenticatorType: string;
+          enabled: boolean;
+          createdAt: string;
+          lastUsedAt: string | null;
+        }>;
+      }>('/auth/biometric/credentials', {
+        method: 'GET',
+      });
+      setCredentials(response.credentials);
+    } catch (error) {
+      console.error('Error al cargar credenciales:', error);
+    } finally {
+      setLoadingCredentials(false);
+    }
+  };
+
+  const handleToggleCredential = async (credentialId: string, enabled: boolean) => {
+    try {
+      await apiRequest('/auth/biometric/credentials/toggle', {
+        method: 'POST',
+        body: JSON.stringify({ credentialId, enabled }),
+      });
+      await loadCredentials();
+    } catch (error) {
+      console.error('Error al actualizar credencial:', error);
+      alert('Error al actualizar la credencial');
+    }
+  };
+
+  const handleDeleteCredential = async (credentialId: string) => {
+    if (!confirm('¿Estás seguro de que deseas eliminar esta credencial?')) {
+      return;
+    }
+    try {
+      await apiRequest(`/auth/biometric/credentials/delete?credentialId=${credentialId}`, {
+        method: 'DELETE',
+      });
+      await loadCredentials();
+      // Recargar estado para actualizar hasCredentials
+      const status = await apiRequest<{
+        hasCredentials: boolean;
+      }>('/auth/biometric/status', {
+        method: 'POST',
+        body: JSON.stringify({ email: user?.email }),
+      });
+      setHasCredentials(status.hasCredentials);
+    } catch (error) {
+      console.error('Error al eliminar credencial:', error);
+      alert('Error al eliminar la credencial');
+    }
+  };
+
+  const handleBiometricToggle = async (enabled: boolean) => {
+    setIsBiometricLoading(true);
+    try {
+      await apiRequest('/auth/biometric/toggle', {
+        method: 'POST',
+        body: JSON.stringify({ enabled }),
+      });
+      setBiometricEnabled(enabled);
+      
+      // Si se activa pero no hay credenciales, mostrar diálogo de registro
+      if (enabled && !hasCredentials && isAvailable) {
+        setShowSetupDialog(true);
+      } else {
+        setHasCredentials(enabled);
+      }
+    } catch (error) {
+      console.error('Error al actualizar biometría:', error);
+      alert('Error al actualizar la configuración de biometría');
+    } finally {
+      setIsBiometricLoading(false);
+    }
+  };
+
+  const handleSetupSuccess = async () => {
+    setHasCredentials(true);
+    setShowSetupDialog(false);
+    await loadCredentials();
+  };
 
   const handleDeleteAll = async () => {
     setIsDeleting(true);
@@ -38,6 +183,134 @@ export default function SettingsPage() {
           Gestiona tu cuenta y configuración
         </p>
       </div>
+
+      {/* Sección de Autenticación Biométrica - Solo mostrar si WebAuthn está soportado */}
+      {isAvailable && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Fingerprint className="h-5 w-5" />
+              Autenticación Biométrica
+            </CardTitle>
+            <CardDescription>
+              Configura el uso de autenticación biométrica (PIN, huella digital, reconocimiento facial, etc.) para iniciar sesión
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="biometric-toggle" className="text-base">
+                  Activar autenticación biométrica
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  {biometricEnabled && hasCredentials
+                    ? 'Puedes iniciar sesión con PIN, huella digital, reconocimiento facial u otro método biométrico'
+                    : biometricEnabled && !hasCredentials
+                    ? 'Registra tu método de autenticación (PIN, huella, etc.) para activar'
+                    : 'Permite iniciar sesión con métodos biométricos (PIN, huella, reconocimiento facial, etc.)'}
+                </p>
+              </div>
+              <Switch
+                id="biometric-toggle"
+                checked={biometricEnabled}
+                onCheckedChange={handleBiometricToggle}
+                disabled={isBiometricLoading}
+              />
+            </div>
+
+            {biometricEnabled && !hasCredentials && (
+              <Button
+                variant="outline"
+                onClick={() => setShowSetupDialog(true)}
+                className="w-full"
+              >
+                <Fingerprint className="mr-2 h-4 w-4" />
+                Registrar Autenticación Biométrica
+              </Button>
+            )}
+
+            {biometricEnabled && hasCredentials && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">Métodos de autenticación registrados</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowSetupDialog(true)}
+                  >
+                    <Fingerprint className="mr-2 h-4 w-4" />
+                    Agregar nuevo
+                  </Button>
+                </div>
+
+                {loadingCredentials ? (
+                  <p className="text-sm text-muted-foreground">Cargando credenciales...</p>
+                ) : credentials.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No hay credenciales registradas</p>
+                ) : (
+                  <div className="space-y-2">
+                    {credentials.map((cred) => {
+                      const isPlatform = cred.authenticatorType === 'platform';
+                      const Icon = isPlatform ? Monitor : Smartphone;
+                      const typeLabel = isPlatform 
+                        ? 'Plataforma (PC/Windows Hello)' 
+                        : cred.authenticatorType === 'cross-platform'
+                        ? 'Passkey (Cross-platform)'
+                        : 'Otro método';
+
+                      return (
+                        <div
+                          key={cred.id}
+                          className="flex items-center justify-between rounded-lg border p-3"
+                        >
+                          <div className="flex items-center gap-3 flex-1">
+                            <Icon className="h-5 w-5 text-muted-foreground" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">
+                                {cred.deviceName}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {typeLabel}
+                              </p>
+                              {cred.lastUsedAt && (
+                                <p className="text-xs text-muted-foreground">
+                                  Último uso: {new Date(cred.lastUsedAt).toLocaleDateString()}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleToggleCredential(cred.credentialId, !cred.enabled)}
+                              title={cred.enabled ? 'Desactivar' : 'Activar'}
+                            >
+                              {cred.enabled ? (
+                                <Power className="h-4 w-4 text-green-600" />
+                              ) : (
+                                <PowerOff className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteCredential(cred.credentialId)}
+                              title="Eliminar"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -111,6 +384,12 @@ export default function SettingsPage() {
           )}
         </CardContent>
       </Card>
+
+      <BiometricSetupDialog
+        open={showSetupDialog}
+        onOpenChange={setShowSetupDialog}
+        onSuccess={handleSetupSuccess}
+      />
     </div>
   );
 }

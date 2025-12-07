@@ -22,4 +22,14 @@ export async function findUserById(id: string): Promise<User | null> {
   });
 }
 
+export async function updateUserBiometricEnabled(
+  userId: string,
+  enabled: boolean
+): Promise<User> {
+  return prisma.user.update({
+    where: { id: userId },
+    data: { biometricEnabled: enabled },
+  });
+}
+
 

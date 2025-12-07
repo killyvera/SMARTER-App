@@ -11,13 +11,15 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id               String   @id @default(cuid())
+  email            String   @unique
+  passwordHash      String
+  biometricEnabled Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  goals Goal[]
+  goals              Goal[]
+  biometricCredentials BiometricCredential[]
 }
 
 model Goal {
@@ -198,5 +200,24 @@ model MiniTaskChecklistItem {
 
   @@index([miniTaskId])
   @@index([completed])
+}
+
+model BiometricCredential {
+  id               String   @id @default(cuid())
+  userId           String
+  credentialId     String   @unique // ID de la credencial WebAuthn (base64url)
+  publicKey        String   // Clave pública en formato JSON
+  counter          Int      @default(0) // Contador de uso para prevenir replay attacks
+  deviceName       String?  // Nombre del dispositivo (ej: "Mi iPhone", "Laptop Windows")
+  authenticatorType String? // Tipo: "platform" (huella/face del dispositivo), "cross-platform" (passkey), etc.
+  enabled          Boolean  @default(true) // Si está activo o desactivado
+  createdAt        DateTime @default(now())
+  lastUsedAt       DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([credentialId])
+  @@index([userId, enabled])
 }
 

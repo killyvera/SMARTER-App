@@ -50,6 +50,8 @@ export function useUpdateGoal() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
       queryClient.invalidateQueries({ queryKey: ['goals', variables.id] });
+      // Invalidar stats cuando se actualiza una goal (puede afectar el progreso)
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
     },
   });
 }
@@ -128,6 +130,8 @@ export function useActivateGoal() {
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['goals', id] });
       queryClient.invalidateQueries({ queryKey: ['goals'] });
+      // Invalidar stats cuando se activa una goal
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
     },
   });
 }

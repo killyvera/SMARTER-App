@@ -1,27 +1,59 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Calendar, Clock } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, getDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { MiniTaskJournalEntry } from '@/types/miniTaskJournal';
+import { useCreateMiniTaskJournalEntry, useUpdateMiniTaskJournalEntry, useDeleteMiniTaskJournalEntry } from '@/features/minitasks/hooks/useMiniTaskJournal';
+import { useUpdateMiniTask } from '@/features/minitasks/hooks/useMiniTasks';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { CheckCircle2, Clock as ClockIcon, AlertCircle, XCircle, Circle } from 'lucide-react';
 
 interface CalendarViewProps {
+  miniTaskId: string;
   frequency?: string;
   alarmTime?: string;
   alarmTimes?: string[];
   checklistEnabled?: boolean;
   checklistType?: 'single' | 'daily' | 'multi-item';
   journalEntries?: MiniTaskJournalEntry[];
+  miniTaskStatus?: string;
 }
 
 const weekDays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
-export function CalendarView({ frequency = 'diaria', alarmTime, alarmTimes, checklistEnabled, checklistType, journalEntries = [] }: CalendarViewProps) {
+export function CalendarView({ 
+  miniTaskId, 
+  frequency = 'diaria', 
+  alarmTime, 
+  alarmTimes, 
+  checklistEnabled, 
+  checklistType, 
+  journalEntries = [],
+  miniTaskStatus 
+}: CalendarViewProps) {
   const today = new Date();
   const monthStart = startOfMonth(today);
   const monthEnd = endOfMonth(today);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  // Estado local para mantener los cambios de estado antes de que se recarguen los datos
+  const [localDayStatuses, setLocalDayStatuses] = useState<Map<string, string>>(new Map());
+  
+  const createJournalEntry = useCreateMiniTaskJournalEntry();
+  const updateJournalEntry = useUpdateMiniTaskJournalEntry();
+  const deleteJournalEntry = useDeleteMiniTaskJournalEntry();
+  const updateMiniTask = useUpdateMiniTask();
 
   // Crear un mapa de fechas con entradas del journal
   const entriesByDate = useMemo(() => {
@@ -61,6 +93,13 @@ export function CalendarView({ frequency = 'diaria', alarmTime, alarmTimes, chec
 
   const getDayStatus = (day: Date) => {
     const dateKey = format(day, 'yyyy-MM-dd');
+    
+    // Verificar si hay un estado local (cambio pendiente)
+    const localStatus = localDayStatuses.get(dateKey);
+    if (localStatus) {
+      return localStatus;
+    }
+    
     const entry = entriesByDate.get(dateKey);
     const hasEntry = !!entry;
     const isExpected = expectedDays.some(d => isSameDay(d, day));
@@ -107,6 +146,163 @@ export function CalendarView({ frequency = 'diaria', alarmTime, alarmTimes, chec
     }
     return 'normal';
   };
+
+  const handleDayClick = (day: Date) => {
+    setSelectedDay(day);
+    setIsDialogOpen(true);
+  };
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (!selectedDay) return;
+
+    const dateKey = format(selectedDay, 'yyyy-MM-dd');
+    const existingEntry = entriesByDate.get(dateKey);
+
+    // Actualizar el estado local inmediatamente para cambiar el color
+    setLocalDayStatuses(prev => {
+      const newMap = new Map(prev);
+      newMap.set(dateKey, newStatus);
+      return newMap;
+    });
+
+    try {
+      if (newStatus === 'completed') {
+        // Completar: crear o actualizar entrada con checklistCompleted=true o progressValue
+        const entryData = {
+          entryDate: selectedDay,
+          checklistCompleted: checklistEnabled ? true : undefined,
+          progressValue: checklistEnabled ? undefined : 100,
+          progressUnit: checklistEnabled ? undefined : '%',
+        };
+
+        if (existingEntry) {
+          await updateJournalEntry.mutateAsync({
+            miniTaskId,
+            entryId: existingEntry.id,
+            data: entryData,
+          });
+        } else {
+          await createJournalEntry.mutateAsync({
+            miniTaskId,
+            data: entryData,
+          });
+        }
+
+        // Actualizar estado de la minitask a COMPLETED si está en PENDING o IN_PROGRESS
+        if (miniTaskStatus && (miniTaskStatus === 'PENDING' || miniTaskStatus === 'IN_PROGRESS')) {
+          await updateMiniTask.mutateAsync({
+            id: miniTaskId,
+            data: { status: 'COMPLETED' },
+          });
+        }
+      } else if (newStatus === 'in-progress') {
+        // En progreso: crear o actualizar entrada con progreso parcial
+        const entryData = {
+          entryDate: selectedDay,
+          progressValue: 50,
+          progressUnit: '%',
+          checklistCompleted: false,
+        };
+
+        if (existingEntry) {
+          await updateJournalEntry.mutateAsync({
+            miniTaskId,
+            entryId: existingEntry.id,
+            data: entryData,
+          });
+        } else {
+          await createJournalEntry.mutateAsync({
+            miniTaskId,
+            data: entryData,
+          });
+        }
+
+        // Actualizar estado de la minitask a IN_PROGRESS si está en PENDING
+        if (miniTaskStatus === 'PENDING') {
+          await updateMiniTask.mutateAsync({
+            id: miniTaskId,
+            data: { status: 'IN_PROGRESS' },
+          });
+        }
+      } else if (newStatus === 'partial') {
+        // Parcial: crear entrada sin checklist ni progreso
+        const entryData = {
+          entryDate: selectedDay,
+          checklistCompleted: false,
+        };
+
+        if (existingEntry) {
+          await updateJournalEntry.mutateAsync({
+            miniTaskId,
+            entryId: existingEntry.id,
+            data: entryData,
+          });
+        } else {
+          await createJournalEntry.mutateAsync({
+            miniTaskId,
+            data: entryData,
+          });
+        }
+      } else if (newStatus === 'missed' || newStatus === 'pending') {
+        // Faltante o Pendiente: eliminar entrada si existe
+        if (existingEntry) {
+          await deleteJournalEntry.mutateAsync({
+            miniTaskId,
+            entryId: existingEntry.id,
+          });
+        }
+      } else if (newStatus === 'extra') {
+        // Extra: crear entrada para día no esperado
+        const entryData = {
+          entryDate: selectedDay,
+          progressValue: 100,
+          progressUnit: '%',
+        };
+
+        if (existingEntry) {
+          await updateJournalEntry.mutateAsync({
+            miniTaskId,
+            entryId: existingEntry.id,
+            data: entryData,
+          });
+        } else {
+          await createJournalEntry.mutateAsync({
+            miniTaskId,
+            data: entryData,
+          });
+        }
+      }
+
+      setIsDialogOpen(false);
+      setSelectedDay(null);
+      
+      // Limpiar el estado local después de un breve delay para permitir que se recarguen los datos
+      setTimeout(() => {
+        setLocalDayStatuses(prev => {
+          const newMap = new Map(prev);
+          newMap.delete(dateKey);
+          return newMap;
+        });
+      }, 1000);
+    } catch (error) {
+      console.error('Error al cambiar estado del día:', error);
+      // Revertir el estado local en caso de error
+      setLocalDayStatuses(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(dateKey);
+        return newMap;
+      });
+    }
+  };
+
+  const statusOptions = [
+    { value: 'completed', label: 'Completado', icon: CheckCircle2, color: 'bg-green-500' },
+    { value: 'in-progress', label: 'En Progreso', icon: ClockIcon, color: 'bg-orange-500' },
+    { value: 'partial', label: 'Parcial', icon: AlertCircle, color: 'bg-yellow-300' },
+    { value: 'missed', label: 'Faltante', icon: XCircle, color: 'bg-red-500' },
+    { value: 'pending', label: 'Pendiente', icon: Circle, color: 'bg-yellow-500' },
+    { value: 'extra', label: 'Extra', icon: Circle, color: 'bg-blue-500' },
+  ];
 
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -183,9 +379,10 @@ export function CalendarView({ frequency = 'diaria', alarmTime, alarmTimes, chec
               return (
                 <div
                   key={dateKey}
+                  onClick={() => handleDayClick(day)}
                   className={`
                     aspect-square rounded sm:rounded-md flex flex-col items-center justify-center text-[10px] sm:text-xs
-                    transition-colors cursor-pointer hover:opacity-80
+                    transition-colors cursor-pointer hover:opacity-80 hover:scale-105
                     ${status === 'completed' ? 'bg-green-500 text-white' :
                       status === 'in-progress' ? 'bg-orange-500 text-white' :
                       status === 'missed' ? 'bg-red-500 text-white' :
@@ -198,9 +395,9 @@ export function CalendarView({ frequency = 'diaria', alarmTime, alarmTimes, chec
                   title={
                     entry
                       ? checklistEnabled
-                        ? `Checklist: ${entry.checklistCompleted ? 'Completado' : 'Pendiente'}${entry.progressValue !== null ? ` | Progreso: ${entry.progressValue} ${entry.progressUnit || ''}` : ''}`
-                        : `Entrada: ${entry.progressValue || 0} ${entry.progressUnit || ''}`
-                      : format(day, 'dd/MM/yyyy')
+                        ? `Checklist: ${entry.checklistCompleted ? 'Completado' : 'Pendiente'}${entry.progressValue !== null ? ` | Progreso: ${entry.progressValue} ${entry.progressUnit || ''}` : ''} - Click para cambiar`
+                        : `Entrada: ${entry.progressValue || 0} ${entry.progressUnit || ''} - Click para cambiar`
+                      : `${format(day, 'dd/MM/yyyy')} - Click para cambiar estado`
                   }
                 >
                   <span className="font-medium">{format(day, 'd')}</span>
@@ -267,6 +464,40 @@ export function CalendarView({ frequency = 'diaria', alarmTime, alarmTimes, chec
           )}
         </div>
       </div>
+
+      {/* Diálogo para cambiar estado del día */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Cambiar Estado - {selectedDay ? format(selectedDay, 'dd/MM/yyyy') : ''}
+            </DialogTitle>
+            <DialogDescription>
+              Selecciona el nuevo estado para este día
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-2 mt-4">
+            {statusOptions.map((option) => {
+              const Icon = option.icon;
+              const currentStatus = selectedDay ? getDayStatus(selectedDay) : 'normal';
+              const isSelected = currentStatus === option.value;
+              
+              return (
+                <Button
+                  key={option.value}
+                  variant={isSelected ? 'default' : 'outline'}
+                  onClick={() => handleStatusChange(option.value)}
+                  className={`flex items-center gap-2 justify-start ${option.color} ${isSelected ? 'opacity-100' : 'opacity-70'}`}
+                  disabled={createJournalEntry.isPending || updateJournalEntry.isPending || deleteJournalEntry.isPending}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{option.label}</span>
+                </Button>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

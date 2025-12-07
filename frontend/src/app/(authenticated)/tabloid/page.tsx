@@ -51,14 +51,15 @@ export default function TabloidPage() {
 
   return (
     <div 
-      className="h-screen overflow-hidden"
+      className="w-full"
       style={{ 
         margin: '-0.75rem -0.75rem -0.75rem -0.75rem',
         paddingLeft: 0,
         paddingRight: 0,
         width: 'calc(100% + 1.5rem)',
         maxWidth: '100vw',
-        boxSizing: 'border-box'
+        boxSizing: 'border-box',
+        minHeight: '100vh'
       }}
     >
       <div className="p-4 border-b bg-background sticky top-0 z-10">
@@ -68,14 +69,14 @@ export default function TabloidPage() {
         </p>
       </div>
       <div 
-        className="overflow-auto" 
+        className="w-full" 
         style={{ 
           paddingRight: 0, 
           marginRight: 0, 
           width: '100%',
           maxWidth: '100%',
           boxSizing: 'border-box',
-          minHeight: 'calc(100vh - 5rem)'
+          paddingBottom: '2rem'
         }}
       >
         <NotesWall miniTasks={tasksWithGoal} />

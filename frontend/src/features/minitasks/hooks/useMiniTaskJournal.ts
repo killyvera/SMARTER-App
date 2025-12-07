@@ -64,7 +64,9 @@ export function useCreateMiniTaskJournalEntry() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['minitask-journal', variables.miniTaskId] });
       queryClient.invalidateQueries({ queryKey: ['minitasks'] });
-      queryClient.invalidateQueries({ queryKey: ['minitasks', { goalId: variables.miniTaskId }] });
+      queryClient.invalidateQueries({ queryKey: ['minitasks', variables.miniTaskId] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
     },
   });
 }
@@ -88,6 +90,10 @@ export function useUpdateMiniTaskJournalEntry() {
       }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['minitask-journal', variables.miniTaskId] });
+      queryClient.invalidateQueries({ queryKey: ['minitasks'] });
+      queryClient.invalidateQueries({ queryKey: ['minitasks', variables.miniTaskId] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
     },
   });
 }
@@ -102,6 +108,10 @@ export function useDeleteMiniTaskJournalEntry() {
       }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['minitask-journal', variables.miniTaskId] });
+      queryClient.invalidateQueries({ queryKey: ['minitasks'] });
+      queryClient.invalidateQueries({ queryKey: ['minitasks', variables.miniTaskId] });
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
     },
   });
 }

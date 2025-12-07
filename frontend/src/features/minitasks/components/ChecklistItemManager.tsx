@@ -72,6 +72,10 @@ export function ChecklistItemManager({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['checklist-items', miniTaskId] });
       queryClient.invalidateQueries({ queryKey: ['minitasks', miniTaskId] });
+      queryClient.invalidateQueries({ queryKey: ['minitasks'] });
+      // Invalidar stats y goals cuando se actualiza un item del checklist (puede marcar minitask como completada)
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
     },
   });
 

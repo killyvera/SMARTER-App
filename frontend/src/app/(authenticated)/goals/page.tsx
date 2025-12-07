@@ -1,13 +1,37 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useGoals } from '@/features/goals/hooks/useGoals';
 import { GoalCard } from '@/features/goals/components/GoalCard';
 import { Button } from '@/components/ui/button';
+import { useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/api';
 import Link from 'next/link';
 import { Plus } from 'lucide-react';
 
 export default function GoalsPage() {
   const { data: goals, isLoading } = useGoals();
+  const queryClient = useQueryClient();
+
+  // Revisar y actualizar el estado de las goals al cargar la página
+  useEffect(() => {
+    const checkGoalsCompletion = async () => {
+      try {
+        await apiRequest('/goals/check-completion', {
+          method: 'POST',
+        });
+        // Invalidar queries para refrescar los datos
+        queryClient.invalidateQueries({ queryKey: ['goals'] });
+        queryClient.invalidateQueries({ queryKey: ['stats'] });
+      } catch (error) {
+        // Silenciar errores, no es crítico si falla
+        console.error('Error al revisar completitud de goals:', error);
+      }
+    };
+
+    // Ejecutar la revisión solo una vez al montar el componente
+    checkGoalsCompletion();
+  }, [queryClient]);
 
   return (
     <div className="w-full max-w-full">

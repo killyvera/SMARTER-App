@@ -14,7 +14,7 @@ export async function PATCH(
   const startTime = Date.now();
   
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     const body = await request.json();
     
     const data = updateMiniTaskJournalEntrySchema.parse(body);
@@ -43,7 +43,7 @@ export async function DELETE(
   const startTime = Date.now();
   
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     
     await deleteMiniTaskJournalEntryService(userId, params.entryId);
     

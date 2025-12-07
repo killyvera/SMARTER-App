@@ -11,7 +11,7 @@ export async function DELETE(request: NextRequest) {
   const startTime = Date.now();
   
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     const { searchParams } = new URL(request.url);
     const credentialId = searchParams.get('credentialId');
 

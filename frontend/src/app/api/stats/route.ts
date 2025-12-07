@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
   const startTime = Date.now();
   
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     
     // Obtener todas las metas
     const goals = await findGoalsByUser(userId);

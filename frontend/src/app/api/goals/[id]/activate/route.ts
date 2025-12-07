@@ -7,7 +7,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     const goal = await activateGoalService(params.id, userId);
     return NextResponse.json(goal);
   } catch (error) {

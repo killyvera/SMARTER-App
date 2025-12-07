@@ -16,7 +16,7 @@ export async function GET(
   const path = `/api/goals/${params.id}`;
   
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     const goal = await getGoalService(params.id, userId);
     const duration = Date.now() - startTime;
     logApiRequest('GET', path, 200, duration);
@@ -41,7 +41,7 @@ export async function PATCH(
   const path = `/api/goals/${params.id}`;
   
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     const body = await request.json();
     const data = updateGoalSchema.parse(body);
     

@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
   
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     const body = await request.json();
     const { credentialId, enabled } = body;
 

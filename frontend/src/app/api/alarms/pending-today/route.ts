@@ -6,7 +6,7 @@ import { startOfDay, format, parse } from 'date-fns';
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     const today = startOfDay(new Date());
     
     // Obtener todas las minitasks del usuario

@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
   
   try {
     // Obtener userId del usuario autenticado
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     const user = await findUserById(userId);
     
     if (!user) {

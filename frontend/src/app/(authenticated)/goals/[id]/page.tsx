@@ -10,6 +10,8 @@ import { MiniTaskCard } from '@/features/minitasks/components/MiniTaskCard';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, Zap, Plus, Sparkles } from 'lucide-react';
+import { GoalProgressBar } from '@/features/goals/components/GoalProgressBar';
+import { calculateGoalProgress } from '@/features/goals/utils/calculateGoalProgress';
 
 type ValidationState = 'idle' | 'validating' | 'reviewing' | 'confirming';
 
@@ -173,7 +175,22 @@ export default function GoalDetailPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold mb-2">{goal.title}</h1>
           {goal.description && (
-            <p className="text-sm sm:text-base text-muted-foreground">{goal.description}</p>
+            <p className="text-sm sm:text-base text-muted-foreground mb-4">{goal.description}</p>
+          )}
+          
+          {/* Barra de progreso prominente */}
+          {(goal.status === 'ACTIVE' || goal.status === 'COMPLETED' || (miniTasks && miniTasks.length > 0)) && (
+            <div className="bg-card border rounded-lg p-4 sm:p-6 mb-4">
+              <h3 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
+                Progreso de la Meta
+              </h3>
+              <GoalProgressBar
+                completed={calculateGoalProgress(miniTasks || []).completed}
+                total={calculateGoalProgress(miniTasks || []).total}
+                percentage={calculateGoalProgress(miniTasks || []).percentage}
+                size="lg"
+              />
+            </div>
           )}
         </div>
 

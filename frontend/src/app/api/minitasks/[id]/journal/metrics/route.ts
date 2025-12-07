@@ -10,7 +10,7 @@ export async function GET(
   const startTime = Date.now();
   
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     const { searchParams } = new URL(request.url);
     
     const dateFrom = searchParams.get('dateFrom') ? new Date(searchParams.get('dateFrom')!) : undefined;

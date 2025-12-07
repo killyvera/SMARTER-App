@@ -38,6 +38,12 @@ export function BiometricSetupDialog({
       await registerBiometric();
       setSuccess(true);
       
+      // Guardar en localStorage que la biometría está configurada
+      // El email se guardará desde la página de login después del login exitoso
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('biometricConfigured', 'true');
+      }
+      
       // Cerrar después de 2 segundos
       setTimeout(() => {
         onOpenChange(false);

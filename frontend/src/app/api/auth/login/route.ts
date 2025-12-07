@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { loginSchema } from '@smarter-app/shared';
 import { loginUser } from '@/services/authService';
 import { logApiRequest, logApiError } from '@/lib/api-logger';
+import { generateToken } from '@/lib/auth/jwt';
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -12,8 +13,8 @@ export async function POST(request: NextRequest) {
     
     const user = await loginUser(data);
     
-    // TODO: Implementar JWT
-    const token = 'temp-token'; // Por ahora token temporal
+    // Generar token JWT
+    const token = await generateToken(user.id, user.email);
     
     const duration = Date.now() - startTime;
     logApiRequest('POST', '/api/auth/login', 200, duration);

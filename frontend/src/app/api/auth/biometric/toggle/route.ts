@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Obtener userId del usuario autenticado
-    const userId = await getUserId();
+    const userId = await getUserId(request);
 
     // Actualizar estado de biometría
     await updateUserBiometricEnabled(userId, enabled);

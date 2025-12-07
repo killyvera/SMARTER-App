@@ -19,7 +19,7 @@ export async function GET(
   const startTime = Date.now();
   
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     const result = await getChecklistItemsService(userId, params.id);
     
     const duration = Date.now() - startTime;
@@ -44,7 +44,7 @@ export async function POST(
   const startTime = Date.now();
   
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     const body = await request.json();
     
     const data = createChecklistItemSchema.parse(body);

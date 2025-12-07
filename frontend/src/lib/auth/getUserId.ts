@@ -1,17 +1,29 @@
-import { findUserByEmail } from '@/repositories/userRepository';
+import { NextRequest } from 'next/server';
+import { verifyToken, extractTokenFromHeader } from './jwt';
 
 /**
- * Obtiene el userId del usuario autenticado
- * Por ahora, como es una app de un solo usuario, retorna el usuario por defecto
+ * Obtiene el userId del usuario autenticado desde el token JWT
+ * @param request Request de Next.js con el header Authorization
+ * @returns ID del usuario autenticado
+ * @throws Error si el token es inválido, expirado o no está presente
  */
-export async function getUserId(): Promise<string> {
-  // TODO: Implementar JWT real
-  // Por ahora, obtener el usuario por defecto
-  const defaultUser = await findUserByEmail('user@local');
-  
-  if (!defaultUser) {
-    throw new Error('Usuario no encontrado. Ejecuta el seed primero.');
+export async function getUserId(request?: NextRequest): Promise<string> {
+  // Si no se proporciona request, intentar obtenerlo del contexto (no disponible en Next.js)
+  // Por ahora, requerimos el request
+  if (!request) {
+    throw new Error('Request es requerido para obtener el userId');
   }
   
-  return defaultUser.id;
+  // Extraer token del header Authorization
+  const authHeader = request.headers.get('authorization');
+  const token = extractTokenFromHeader(authHeader);
+  
+  if (!token) {
+    throw new Error('Token de autenticación no proporcionado');
+  }
+  
+  // Verificar y decodificar token
+  const payload = await verifyToken(token);
+  
+  return payload.userId;
 }

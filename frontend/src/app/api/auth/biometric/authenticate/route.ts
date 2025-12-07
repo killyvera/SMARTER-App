@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { findUserByEmail } from '@/repositories/userRepository';
+import { findUserById, findUserByEmail } from '@/repositories/userRepository';
 import {
   findBiometricCredentialsByUserId,
   findBiometricCredentialByCredentialId,
@@ -10,6 +10,7 @@ import {
   verifyAuthenticationResponse,
 } from '@/services/biometricAuthService';
 import { logApiRequest, logApiError } from '@/lib/api-logger';
+import { generateToken } from '@/lib/auth/jwt';
 
 // Almacenar challenges temporalmente (en producción usar Redis o similar)
 const authenticationChallenges = new Map<string, { challenge: string; userId: string; expiresAt: number }>();
@@ -56,11 +57,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verificar que tenga credenciales registradas
-    const credentials = await findBiometricCredentialsByUserId(user.id);
-    if (credentials.length === 0) {
+    // Verificar que tenga credenciales habilitadas registradas
+    // Usar onlyEnabled=true para verificar solo credenciales activas
+    const enabledCredentials = await findBiometricCredentialsByUserId(user.id, true);
+    if (enabledCredentials.length === 0) {
       return NextResponse.json(
-        { error: 'No hay credenciales biométricas registradas' },
+        { error: 'No hay credenciales biométricas habilitadas registradas' },
         { status: 400 }
       );
     }
@@ -69,10 +71,23 @@ export async function POST(request: NextRequest) {
     const origin = request.headers.get('origin') || request.headers.get('referer') || 'http://localhost:3000';
     
     // Generar opciones de autenticación
-    const options = await generateAuthenticationOptionsForUser(
-      user.id,
-      origin
-    );
+    // Esta función también valida y limpia credenciales inválidas
+    let options;
+    try {
+      options = await generateAuthenticationOptionsForUser(
+        user.id,
+        origin
+      );
+    } catch (error) {
+      // Si generateAuthenticationOptionsForUser falla, puede ser porque no hay credenciales válidas
+      if (error instanceof Error && error.message.includes('No hay credenciales')) {
+        return NextResponse.json(
+          { error: 'No hay credenciales biométricas válidas registradas' },
+          { status: 400 }
+        );
+      }
+      throw error;
+    }
 
     // Almacenar challenge temporalmente (expira en 5 minutos)
     const challengeKey = `${user.id}-${Date.now()}`;
@@ -289,8 +304,8 @@ export async function PUT(request: NextRequest) {
     );
 
     // Obtener usuario
-    const user = await findUserByEmail('user@local'); // Por ahora usuario por defecto
-    if (!user || user.id !== userId) {
+    const user = await findUserById(userId);
+    if (!user) {
       return NextResponse.json(
         { error: 'Usuario no encontrado' },
         { status: 404 }
@@ -300,8 +315,8 @@ export async function PUT(request: NextRequest) {
     // Eliminar challenge usado
     authenticationChallenges.delete(challengeKey);
 
-    // TODO: Implementar JWT real
-    const token = 'temp-token';
+    // Generar token JWT
+    const token = await generateToken(user.id, user.email);
 
     const duration = Date.now() - startTime;
     logApiRequest('PUT', '/api/auth/biometric/authenticate', 200, duration);

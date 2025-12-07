@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   
   try {
     // Obtener userId del usuario autenticado
-    const userId = await getUserId();
+    const userId = await getUserId(request);
 
     // Obtener todas las credenciales del usuario
     const credentials = await findBiometricCredentialsByUserId(userId);

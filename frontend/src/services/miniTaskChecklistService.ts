@@ -10,6 +10,7 @@ import {
 } from '@/repositories/miniTaskChecklistRepository';
 import { findMiniTaskById } from '@/repositories/miniTaskRepository';
 import { updateMiniTask } from '@/repositories/miniTaskRepository';
+import { checkAndUpdateGoalCompletion } from '@/services/goalService';
 import type { CreateMiniTaskChecklistItemInput, UpdateMiniTaskChecklistItemInput } from '@/types/miniTaskChecklist';
 
 export async function createChecklistItemService(
@@ -94,6 +95,15 @@ export async function updateChecklistItemService(
           await updateMiniTask(item.miniTaskId, {
             status: 'COMPLETED',
           });
+          
+          // Verificar si la goal debe marcarse como completada
+          if (miniTask.goalId) {
+            try {
+              await checkAndUpdateGoalCompletion(miniTask.goalId, userId);
+            } catch (error) {
+              console.error('Error al verificar completitud de goal:', error);
+            }
+          }
         }
       }
     }
@@ -159,6 +169,15 @@ export async function toggleChecklistItemService(
         await updateMiniTask(item.miniTaskId, {
           status: 'COMPLETED',
         });
+        
+        // Verificar si la goal debe marcarse como completada
+        if (miniTask.goalId) {
+          try {
+            await checkAndUpdateGoalCompletion(miniTask.goalId, userId);
+          } catch (error) {
+            console.error('Error al verificar completitud de goal:', error);
+          }
+        }
       }
     }
   }

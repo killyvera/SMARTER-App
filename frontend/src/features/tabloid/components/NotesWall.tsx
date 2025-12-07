@@ -35,32 +35,51 @@ function calculateCompletionPercentage(status: string): number {
 }
 
 /**
- * Ordena minitasks: primero por porcentaje de cumplimiento (100% primero),
- * luego por fecha (deadline o createdAt)
+ * Ordena minitasks: primero las que están en progreso (IN_PROGRESS),
+ * luego las demás distribuidas de manera random
  */
 function sortMiniTasks(
   tasks: Array<MiniTask & { goal: { id: string; title: string; color: string | null } }>
 ) {
-  return [...tasks].sort((a, b) => {
-    // Prioridad 1: Por porcentaje de cumplimiento (100% primero)
-    const percentageA = calculateCompletionPercentage(a.status);
-    const percentageB = calculateCompletionPercentage(b.status);
-    
-    if (percentageB !== percentageA) {
-      return percentageB - percentageA; // Mayor primero (100% arriba)
+  // Separar en dos grupos: en progreso y demás
+  const inProgress: typeof tasks = [];
+  const others: typeof tasks = [];
+  
+  tasks.forEach(task => {
+    if (task.status === 'IN_PROGRESS') {
+      inProgress.push(task);
+    } else {
+      others.push(task);
     }
-    
-    // Prioridad 2: Por fecha (deadline o createdAt)
-    const dateA = a.deadline || a.createdAt;
-    const dateB = b.deadline || b.createdAt;
-    
-    if (dateA && dateB) {
-      return new Date(dateA).getTime() - new Date(dateB).getTime();
-    }
-    if (dateA) return -1;
-    if (dateB) return 1;
-    return 0;
   });
+  
+  // Función para mezclar array de manera random usando el ID como semilla
+  function shuffleArray<T extends { id: string }>(array: T[]): T[] {
+    const shuffled = [...array];
+    // Usar el ID como semilla para generar un orden pseudoaleatorio pero consistente
+    shuffled.sort((a, b) => {
+      let hashA = 0;
+      let hashB = 0;
+      for (let i = 0; i < a.id.length; i++) {
+        hashA = ((hashA << 5) - hashA) + a.id.charCodeAt(i);
+        hashA = hashA & hashA;
+      }
+      for (let i = 0; i < b.id.length; i++) {
+        hashB = ((hashB << 5) - hashB) + b.id.charCodeAt(i);
+        hashB = hashB & hashB;
+      }
+      // Combinar ambos hashes para crear un orden más aleatorio
+      const combinedHash = (hashA + hashB) % 1000;
+      return combinedHash - 500; // Retornar valor entre -500 y 500
+    });
+    return shuffled;
+  }
+  
+  // Mezclar las demás de manera random
+  const shuffledOthers = shuffleArray(others);
+  
+  // Retornar: primero las en progreso, luego las demás mezcladas
+  return [...inProgress, ...shuffledOthers];
 }
 
 /**

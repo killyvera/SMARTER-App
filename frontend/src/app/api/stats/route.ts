@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getUserId } from '@/lib/auth/getUserId';
 import { findGoalsByUser } from '@/repositories/goalRepository';
 import { findMiniTasksByUser } from '@/repositories/miniTaskRepository';
+import { calculateGoalProgress } from '@/features/goals/utils/calculateGoalProgress';
 import { logApiRequest, logApiError } from '@/lib/api-logger';
 
 export async function GET(request: NextRequest) {
@@ -32,12 +33,32 @@ export async function GET(request: NextRequest) {
       completed: miniTasks.filter(mt => mt.status === 'COMPLETED').length,
     };
     
-    // Calcular progreso general
-    const totalGoals = goalsStats.total;
-    const completedGoals = goalsStats.completed;
-    const progressPercentage = totalGoals > 0 
-      ? Math.round((completedGoals / totalGoals) * 100) 
+    // Calcular progreso general basado en minitasks completadas
+    // Para cada goal, calcular su progreso basado en minitasks
+    let totalProgress = 0;
+    let goalsWithProgress = 0;
+    
+    goals.forEach(goal => {
+      const goalProgress = calculateGoalProgress(goal.miniTasks || []);
+      if (goalProgress.total > 0) {
+        totalProgress += goalProgress.percentage;
+        goalsWithProgress++;
+      }
+    });
+    
+    // Calcular porcentaje promedio de progreso de todas las goals
+    const progressPercentage = goalsWithProgress > 0 
+      ? Math.round(totalProgress / goalsWithProgress) 
       : 0;
+    
+    // Contar goals completadas basado en progreso de minitasks (100%) o status COMPLETED
+    const completedGoalsByProgress = goals.filter(goal => {
+      const goalProgress = calculateGoalProgress(goal.miniTasks || []);
+      return goalProgress.total > 0 && goalProgress.percentage === 100;
+    }).length;
+    
+    // Usar el mayor entre goals con status COMPLETED y goals con 100% de progreso
+    const completedGoals = Math.max(goalsStats.completed, completedGoalsByProgress);
     
     const stats = {
       goals: goalsStats,
@@ -45,7 +66,7 @@ export async function GET(request: NextRequest) {
       progress: {
         percentage: progressPercentage,
         completed: completedGoals,
-        total: totalGoals,
+        total: goalsStats.total,
       },
     };
     

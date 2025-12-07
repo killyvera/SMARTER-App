@@ -199,12 +199,14 @@ export function MetricsDisplay({ miniTask }: MetricsDisplayProps) {
               icon={<Calendar className="h-5 w-5 text-primary" />}
             >
               <CalendarView
+                miniTaskId={miniTask.id}
                 frequency={calendarPlugin.config?.frequency}
                 alarmTime={calendarPlugin.config?.alarmTime}
                 alarmTimes={calendarPlugin.config?.alarmTimes}
                 checklistEnabled={calendarPlugin.config?.checklistEnabled}
                 checklistType={calendarPlugin.config?.checklistType}
                 journalEntries={journalEntries || []}
+                miniTaskStatus={miniTask.status}
               />
             </PluginSection>
           )}

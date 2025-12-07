@@ -62,6 +62,9 @@ export function useUpdateMiniTask() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['minitasks'] });
       queryClient.invalidateQueries({ queryKey: ['minitasks', variables.id] });
+      // Invalidar stats cuando se actualiza una minitask (puede afectar el progreso de goals)
+      queryClient.invalidateQueries({ queryKey: ['stats'] });
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
     },
   });
 }

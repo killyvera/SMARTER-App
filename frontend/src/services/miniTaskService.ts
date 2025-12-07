@@ -8,6 +8,7 @@ import {
 } from '@/repositories/miniTaskRepository';
 import { createMiniTaskScore } from '@/repositories/miniTaskScoreRepository';
 import { validateMiniTaskSmart, unlockMiniTask } from '@/clients/aiClient';
+import { checkAndUpdateGoalCompletion } from '@/services/goalService';
 import type { CreateMiniTaskInput, UpdateMiniTaskInput } from '@smarter-app/shared';
 import { format } from 'date-fns';
 
@@ -216,8 +217,9 @@ export async function updateMiniTaskService(
   }
   
   const deadline = input.deadline ? new Date(input.deadline) : undefined;
+  const goalId = miniTask.goalId;
   
-  return updateMiniTask(miniTaskId, {
+  const updatedMiniTask = await updateMiniTask(miniTaskId, {
     title: input.title,
     description: input.description,
     deadline,
@@ -228,6 +230,18 @@ export async function updateMiniTaskService(
     positionX: input.positionX,
     positionY: input.positionY,
   });
+  
+  // Si se actualizó el status a COMPLETED, verificar si la goal debe marcarse como completada
+  if (input.status === 'COMPLETED' && goalId) {
+    try {
+      await checkAndUpdateGoalCompletion(goalId, userId);
+    } catch (error) {
+      // No fallar la actualización de la minitask si hay error al verificar la goal
+      console.error('Error al verificar completitud de goal:', error);
+    }
+  }
+  
+  return updatedMiniTask;
 }
 
 export async function unlockMiniTaskService(miniTaskId: string, userId: string) {

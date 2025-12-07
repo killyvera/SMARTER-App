@@ -7,9 +7,10 @@ import {
 } from '@/repositories/goalRepository';
 import { createSmarterScore, findSmarterScoreByGoalId } from '@/repositories/smarterScoreRepository';
 import { createSuggestedMiniTask } from '@/repositories/suggestedMiniTaskRepository';
-import { createMiniTask } from '@/repositories/miniTaskRepository';
+import { createMiniTask, findMiniTasksByGoal } from '@/repositories/miniTaskRepository';
 import { createReadjustment } from '@/repositories/readjustmentRepository';
 import { validateGoalSmart, type GoalValidationResponse } from '@/clients/aiClient';
+import { calculateGoalProgress } from '@/features/goals/utils/calculateGoalProgress';
 import type { CreateGoalInput, UpdateGoalInput } from '@smarter-app/shared';
 import { format } from 'date-fns';
 
@@ -273,5 +274,35 @@ export async function getReadjustmentsByGoalService(goalId: string, userId: stri
   
   const { findReadjustmentsByGoal } = await import('@/repositories/readjustmentRepository');
   return findReadjustmentsByGoal(goalId);
+}
+
+/**
+ * Verifica si todas las minitasks de una goal están completadas y actualiza el status de la goal a COMPLETED
+ * @param goalId ID de la goal a verificar
+ * @param userId ID del usuario (para verificación de autorización)
+ */
+export async function checkAndUpdateGoalCompletion(goalId: string, userId: string): Promise<void> {
+  const goal = await findGoalById(goalId, userId);
+  
+  if (!goal) {
+    return; // Goal no encontrada, no hacer nada
+  }
+  
+  // Solo verificar si la goal está en estado ACTIVE
+  if (goal.status !== 'ACTIVE') {
+    return; // Solo actualizar goals activas
+  }
+  
+  // Obtener todas las minitasks de la goal
+  const miniTasks = await findMiniTasksByGoal(goalId);
+  
+  // Calcular progreso
+  const progress = calculateGoalProgress(miniTasks);
+  
+  // Si todas las minitasks válidas están completadas (100%), marcar la goal como COMPLETED
+  if (progress.total > 0 && progress.percentage === 100) {
+    console.log(`[checkAndUpdateGoalCompletion] Marcando goal ${goalId} como COMPLETED (${progress.completed}/${progress.total} minitasks completadas)`);
+    await updateGoal(goalId, userId, { status: 'COMPLETED' });
+  }
 }
 

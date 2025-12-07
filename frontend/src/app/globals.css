@@ -553,6 +553,30 @@
 }
 
 
+/* Estilos específicos para post-its en Tabloid - siempre negro y fuente marker */
+/* Estos estilos deben sobrescribir todos los estilos de tema, incluyendo cyberpunk */
+.sticky-note-title,
+.sticky-note-title h3,
+h3.sticky-note-title,
+[class*="sticky-note"] h3,
+.cyberpunk .sticky-note-title,
+.cyberpunk h3.sticky-note-title,
+.cyberpunk [class*="sticky-note"] h3,
+.cyberpunk [class*="sticky-note"] .sticky-note-title {
+  font-family: var(--font-marker), "Permanent Marker", cursive !important;
+  color: #000000 !important;
+  text-transform: none !important;
+  text-shadow: none !important;
+  font-weight: normal !important;
+  letter-spacing: normal !important;
+}
+
+/* Invertir color de la imagen de login en tema cyberpunk */
+.cyberpunk .login-icon,
+.cyberpunk img.login-icon {
+  filter: invert(1) !important;
+}
+
 @layer base {
   * {
     @apply border-border;

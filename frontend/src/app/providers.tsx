@@ -1,7 +1,13 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useCyberpunkGlitch } from '@/hooks/useCyberpunkGlitch';
+
+function CyberpunkGlitchEffect() {
+  useCyberpunkGlitch();
+  return null;
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -16,8 +22,19 @@ export function Providers({ children }: { children: React.ReactNode }) {
       })
   );
 
+  // Inicializar tema al cargar
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    const root = document.documentElement;
+    root.classList.remove('light', 'dark', 'cyberpunk');
+    root.classList.add(savedTheme);
+  }, []);
+
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <CyberpunkGlitchEffect />
+      {children}
+    </QueryClientProvider>
   );
 }
 

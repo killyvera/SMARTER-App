@@ -3,7 +3,7 @@ import { getUserId } from '@/lib/auth/getUserId';
 import { findUserById, updateUserPassword } from '@/repositories/userRepository';
 import { changePasswordSchema } from '@smarter-app/shared';
 import { logApiRequest, logApiError } from '@/lib/api-logger';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 
 // PATCH /api/user/password - Cambiar contraseña del usuario
 export async function PATCH(request: NextRequest) {

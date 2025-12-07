@@ -3,13 +3,14 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useUIStore } from '@/stores/uiStore';
-import { Home, Target, CheckSquare, Settings, User } from 'lucide-react';
+import { Home, Target, CheckSquare, Settings, User, StickyNote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: Home },
   { name: 'Metas', href: '/goals', icon: Target },
   { name: 'MiniTasks', href: '/minitasks', icon: CheckSquare },
+  { name: 'Tabloid', href: '/tabloid', icon: StickyNote },
   { name: 'Perfil', href: '/profile', icon: User },
   { name: 'Configuración', href: '/settings', icon: Settings },
 ];

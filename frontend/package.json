@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "next dev -H 0.0.0.0",
-    "build": "cross-env NEXT_PUBLIC_BUILD_TIME=$(date +%s) NEXT_PUBLIC_APP_VERSION=v$(date +%s) prisma generate && next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "postinstall": "prisma generate",
     "lint": "next lint",
@@ -13,6 +13,9 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
     "@github/webauthn-json": "^2.1.1",
     "@hookform/resolvers": "^3.3.4",
     "@prisma/client": "^5.22.0",

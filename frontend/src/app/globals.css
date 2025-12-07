@@ -55,6 +55,31 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Deshabilitar selección de texto por defecto */
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+  }
+  
+  /* Permitir selección en campos de entrada y áreas de texto */
+  input,
+  textarea,
+  [contenteditable="true"],
+  [contenteditable="true"] * {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    -moz-user-select: text !important;
+    -ms-user-select: text !important;
+  }
+  
+  /* Permitir selección en elementos que deben ser seleccionables */
+  code,
+  pre {
+    user-select: text;
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
   }
 }
 

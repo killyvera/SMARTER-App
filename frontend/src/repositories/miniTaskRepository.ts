@@ -1,10 +1,31 @@
 import { prisma } from '@/lib/prisma/client';
 import type { MiniTask } from '@prisma/client';
+import { ensureGoalHasColor, ensureMiniTaskHasColor } from '@/utils/colorUtils';
 
 export async function createMiniTask(
   goalId: string,
-  data: { title: string; description?: string; deadline?: Date; plannedHours?: number; isSingleDayTask?: boolean }
+  data: { title: string; description?: string; deadline?: Date; plannedHours?: number; isSingleDayTask?: boolean; color?: string }
 ): Promise<MiniTask> {
+  // Obtener el goal para heredar su color si no se proporciona uno
+  const goal = await prisma.goal.findUnique({
+    where: { id: goalId },
+    select: { color: true } as any,
+  });
+  
+  // Asegurar que el goal tenga color
+  const goalColor = goal ? ensureGoalHasColor(goal as any) : '#3b82f6'; // Color por defecto si no hay goal
+  
+  // Si el goal no tenía color, actualizarlo
+  if (goal && !(goal as any).color) {
+    await prisma.goal.update({
+      where: { id: goalId },
+      data: { color: goalColor } as any,
+    });
+  }
+  
+  // Heredar color del goal si no se proporciona uno
+  const color = data.color || goalColor;
+  
   return prisma.miniTask.create({
     data: {
       goalId,
@@ -13,6 +34,7 @@ export async function createMiniTask(
       deadline: data.deadline,
       plannedHours: data.plannedHours,
       isSingleDayTask: data.isSingleDayTask ?? false,
+      color: color as any,
       status: 'DRAFT',
     },
   });
@@ -195,6 +217,69 @@ export async function findMiniTasksByUser(userId: string): Promise<MiniTask[]> {
             id: true,
             title: true,
             userId: true,
+            color: true,
+          },
+        },
+        score: true,
+        plugins: {
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+    
+    // Asegurar que todos los goals tengan color y que todas las minitasks hereden el color
+    const tasksToUpdate: Array<{ id: string; color: string }> = [];
+    
+    for (const task of tasks) {
+      // Asegurar que el goal tenga color
+      const goalColor = task.goal ? ensureGoalHasColor(task.goal as any) : '#3b82f6';
+      
+      // Si el goal no tenía color, actualizarlo
+      if (task.goal && !(task.goal as any).color) {
+        await prisma.goal.update({
+          where: { id: task.goal.id },
+          data: { color: goalColor } as any,
+        });
+      }
+      
+      // Asegurar que la minitask tenga color (heredado del goal)
+      const taskColor = ensureMiniTaskHasColor(task as any, goalColor);
+      if (!(task as any).color || (task as any).color !== taskColor) {
+        tasksToUpdate.push({ id: task.id, color: taskColor });
+      }
+    }
+    
+    // Actualizar minitasks sin color
+    if (tasksToUpdate.length > 0) {
+      await Promise.all(
+        tasksToUpdate.map(({ id, color }) =>
+          prisma.miniTask.update({
+            where: { id },
+            data: { color },
+          })
+        )
+      );
+    }
+    
+    // Refetch para obtener los colores actualizados
+    const updatedTasks = await prisma.miniTask.findMany({
+      where: {
+        goal: {
+          userId,
+        },
+      },
+      include: {
+        goal: {
+          select: {
+            id: true,
+            title: true,
+            userId: true,
+            color: true,
           },
         },
         score: true,
@@ -210,7 +295,7 @@ export async function findMiniTasksByUser(userId: string): Promise<MiniTask[]> {
     });
     
     // Parsear configs de plugins y asegurar valores por defecto
-    return tasks.map(task => ({
+    return updatedTasks.map(task => ({
       ...task,
       unlocked: task.unlocked ?? false,
       plugins: task.plugins?.map(plugin => ({
@@ -233,6 +318,7 @@ export async function findMiniTasksByUser(userId: string): Promise<MiniTask[]> {
             id: true,
             title: true,
             userId: true,
+            color: true,
           },
         },
         score: true,
@@ -241,6 +327,24 @@ export async function findMiniTasksByUser(userId: string): Promise<MiniTask[]> {
         createdAt: 'desc',
       },
     });
+    
+    // Asegurar colores básicos
+    for (const task of tasks) {
+      const goalColor = task.goal ? ensureGoalHasColor(task.goal as any) : '#3b82f6';
+      if (task.goal && !(task.goal as any).color) {
+        await prisma.goal.update({
+          where: { id: task.goal.id },
+          data: { color: goalColor } as any,
+        });
+      }
+      const taskColor = ensureMiniTaskHasColor(task as any, goalColor);
+      if (!(task as any).color || (task as any).color !== taskColor) {
+        await prisma.miniTask.update({
+          where: { id: task.id },
+          data: { color: taskColor } as any,
+        });
+      }
+    }
     
     return tasks.map(task => ({
       ...task,
@@ -261,11 +365,14 @@ export async function updateMiniTask(
     metricsConfig?: string;
     plannedHours?: number;
     isSingleDayTask?: boolean;
+    color?: string;
+    positionX?: number;
+    positionY?: number;
   }
 ): Promise<MiniTask> {
   return prisma.miniTask.update({
     where: { id },
-    data,
+    data: data as any,
   });
 }
 

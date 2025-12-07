@@ -264,7 +264,7 @@ export function useBiometric() {
 
       // Obtener nombre del dispositivo
       const deviceName = typeof navigator !== 'undefined' 
-        ? (navigator.userAgentData?.platform || navigator.platform || 'Dispositivo desconocido')
+        ? ((navigator as any).userAgentData?.platform || navigator.platform || 'Dispositivo desconocido')
         : 'Dispositivo desconocido';
 
       // Paso 5: Enviar respuesta al servidor para verificación

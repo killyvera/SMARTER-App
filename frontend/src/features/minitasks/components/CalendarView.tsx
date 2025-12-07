@@ -70,7 +70,7 @@ export function CalendarView({ frequency = 'diaria', alarmTime, alarmTimes, chec
     // Detectar si hay progreso parcial (timeSpent o progressValue)
     const hasProgress = hasEntry && (
       (entry.timeSpent && entry.timeSpent > 0) || 
-      (entry.progressValue !== null && entry.progressValue > 0)
+      (entry.progressValue !== null && entry.progressValue !== undefined && entry.progressValue > 0)
     );
 
     // Si el checklist está habilitado, priorizar el estado del checklist

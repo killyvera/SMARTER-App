@@ -34,6 +34,7 @@ model Goal {
   deadline    DateTime?
   plannedHours Float?   // Horas planificadas para goals de un solo día
   isSingleDayGoal Boolean @default(false) // Indica si es un goal de un solo día
+  color       String?  // Color hexadecimal para identificación visual
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -75,6 +76,9 @@ model MiniTask {
   plannedHours Float?   // Horas planificadas para mini-tasks de un solo día
   isSingleDayTask Boolean @default(false) // Indica si es una task de un solo día
   metricsConfig String? // JSON string con configuración de plugins y métricas
+  color        String?  // Color hexadecimal (heredado del goal o personalizado)
+  positionX    Float?   // Posición X en el muro de notas (píxeles)
+  positionY    Float?   // Posición Y en el muro de notas (píxeles)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

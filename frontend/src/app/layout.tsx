@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter, Orbitron } from 'next/font/google';
+import { Inter, Orbitron, Permanent_Marker } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
 import { InstallBanner } from '@/components/InstallBanner';
@@ -8,6 +8,12 @@ const inter = Inter({ subsets: ['latin'] });
 const orbitron = Orbitron({ 
   subsets: ['latin'],
   variable: '--font-orbitron',
+  display: 'swap',
+});
+const permanentMarker = Permanent_Marker({ 
+  weight: '400',
+  subsets: ['latin'],
+  variable: '--font-marker',
   display: 'swap',
 });
 
@@ -48,7 +54,7 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.webmanifest" />
         <meta name="theme-color" content="#222222" />
       </head>
-      <body className={`${inter.className} ${orbitron.variable}`}>
+      <body className={`${inter.className} ${orbitron.variable} ${permanentMarker.variable}`}>
         <script
           dangerouslySetInnerHTML={{
             __html: `

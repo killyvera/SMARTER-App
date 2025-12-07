@@ -72,7 +72,7 @@ export default function RegisterPage() {
               alt="Smarter App Logo"
               width={120}
               height={120}
-              className="object-contain w-20 h-20 sm:w-24 sm:h-24 md:w-30 md:h-30"
+              className="object-contain w-20 h-20 sm:w-24 sm:h-24 md:w-30 md:h-30 login-icon"
               priority
             />
           </div>

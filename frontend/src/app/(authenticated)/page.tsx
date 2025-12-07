@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { useStats } from '@/features/dashboard/hooks/useStats';
+import { useUserProfile } from '@/features/user/hooks/useUserProfile';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -10,6 +11,7 @@ import { PendingTasksNotification } from '@/components/alarms/PendingTasksNotifi
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { data: profile } = useUserProfile();
   const { data: stats, isLoading } = useStats();
 
   const getGreeting = () => {
@@ -17,6 +19,17 @@ export default function DashboardPage() {
     if (hour < 12) return 'Buenos días';
     if (hour < 18) return 'Buenas tardes';
     return 'Buenas noches';
+  };
+
+  // Obtener nombre para mostrar: si hay nombre, tomar el primer chunk (primer nombre)
+  // Si no hay nombre, usar el email como fallback
+  const getDisplayName = () => {
+    if (profile?.name) {
+      // Hacer split por espacios y tomar el primer chunk
+      return profile.name.split(' ')[0];
+    }
+    // Fallback al email si no hay nombre
+    return user?.email?.split('@')[0] || 'Usuario';
   };
 
   if (isLoading) {
@@ -44,7 +57,7 @@ export default function DashboardPage() {
       {/* Mensaje de bienvenida */}
       <div className="space-y-2">
         <h1 className="text-2xl sm:text-3xl font-bold">
-          {getGreeting()}, {user?.email?.split('@')[0] || 'Usuario'}
+          {getGreeting()}, {getDisplayName()}
         </h1>
         <p className="text-sm sm:text-base text-muted-foreground">
           Aquí tienes un resumen de tu progreso

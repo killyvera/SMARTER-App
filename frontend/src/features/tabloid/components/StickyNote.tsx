@@ -36,7 +36,7 @@ function calculateCompletionPercentage(status: string): number {
 }
 
 export function StickyNote({ miniTask, style }: StickyNoteProps) {
-  // Obtener color del goal (heredado por la minitask)
+  // Obtener color del goal (heredado por la minitask) - mismo color para todos los temas
   const baseColor = useMemo(() => {
     return miniTask.color || miniTask.goal.color || '#3b82f6';
   }, [miniTask.color, miniTask.goal.color]);
@@ -61,11 +61,12 @@ export function StickyNote({ miniTask, style }: StickyNoteProps) {
         ...style,
       }}
     >
-      {/* Título - Ocupa casi todo el espacio, texto grande */}
+      {/* Título - Ocupa casi todo el espacio, texto grande con fuente estilo post-it */}
       <div className="flex-1 flex items-center justify-center p-3 pb-2 min-h-0 overflow-hidden">
         <h3 
-          className="font-bold text-gray-900 text-center break-words"
+          className="text-center break-words sticky-note-title"
           style={{
+            fontFamily: 'var(--font-marker), "Permanent Marker", cursive',
             fontSize: 'clamp(0.875rem, 2.5vw, 2.5rem)',
             lineHeight: '1.2',
             wordBreak: 'break-word',
@@ -76,6 +77,10 @@ export function StickyNote({ miniTask, style }: StickyNoteProps) {
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             maxHeight: '100%',
+            color: '#000000',
+            fontWeight: 'normal',
+            textTransform: 'none',
+            textShadow: 'none',
           }}
         >
           {miniTask.title}

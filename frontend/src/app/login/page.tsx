@@ -12,6 +12,7 @@ import { Fingerprint } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { BiometricSetupDialog } from '@/components/biometric/BiometricSetupDialog';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -140,7 +141,17 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8 rounded-lg border bg-card p-8 shadow-sm">
         <div className="text-center">
-          <h1 className="text-3xl font-bold">Smarter App</h1>
+          <div className="flex justify-center mb-4">
+            <Image
+              src="/smarterIcon.png"
+              alt="Smarter App Logo"
+              width={120}
+              height={120}
+              className="object-contain"
+              priority
+            />
+          </div>
+          <h1 className="text-3xl font-bold">SMARTER App</h1>
           <p className="mt-2 text-muted-foreground">
             Inicia sesión para gestionar tus metas
           </p>

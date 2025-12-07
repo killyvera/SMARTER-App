@@ -50,14 +50,34 @@ export default function TabloidPage() {
   }).filter((task: any) => task.goal); // Filtrar las que no tienen goal
 
   return (
-    <div className="w-full h-screen overflow-hidden max-w-full">
-      <div className="p-4 border-b bg-background">
+    <div 
+      className="h-screen overflow-hidden"
+      style={{ 
+        margin: '-0.75rem -0.75rem -0.75rem -0.75rem',
+        paddingLeft: 0,
+        paddingRight: 0,
+        width: 'calc(100% + 1.5rem)',
+        maxWidth: '100vw',
+        boxSizing: 'border-box'
+      }}
+    >
+      <div className="p-4 border-b bg-background sticky top-0 z-10">
         <h1 className="text-2xl font-bold">Tabloid</h1>
         <p className="text-sm text-muted-foreground">
-          Muro de notas - Arrastra las notas para reorganizarlas
+          Muro de notas - Visualización de todas las minitasks
         </p>
       </div>
-      <div className="w-full h-[calc(100vh-5rem)] overflow-auto overflow-x-hidden">
+      <div 
+        className="overflow-auto" 
+        style={{ 
+          paddingRight: 0, 
+          marginRight: 0, 
+          width: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+          minHeight: 'calc(100vh - 5rem)'
+        }}
+      >
         <NotesWall miniTasks={tasksWithGoal} />
       </div>
     </div>

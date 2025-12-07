@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { apiRequest } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -65,6 +66,16 @@ export default function RegisterPage() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8 rounded-lg border bg-card p-8 shadow-sm">
         <div className="text-center">
+          <div className="flex justify-center mb-4">
+            <Image
+              src="/smarterIcon.png"
+              alt="Smarter App Logo"
+              width={120}
+              height={120}
+              className="object-contain"
+              priority
+            />
+          </div>
           <h1 className="text-3xl font-bold">Smarter App</h1>
           <p className="mt-2 text-muted-foreground">
             Crea una cuenta para comenzar

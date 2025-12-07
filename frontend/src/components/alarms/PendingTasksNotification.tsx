@@ -37,11 +37,11 @@ export function PendingTasksNotification() {
   };
 
   return (
-    <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20">
-      <CardHeader>
-        <div className="flex items-center justify-between gap-2">
-          <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-orange-900 dark:text-orange-100">
-            <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
+    <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20 w-full max-w-full overflow-hidden">
+      <CardHeader className="w-full max-w-full">
+        <div className="flex items-center justify-between gap-2 w-full">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-orange-900 dark:text-orange-100 min-w-0 flex-1">
+            <Bell className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
             <span className="truncate">Tareas Pendientes de Hoy</span>
           </CardTitle>
           <Button
@@ -54,17 +54,17 @@ export function PendingTasksNotification() {
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-2 sm:space-y-3">
+      <CardContent className="w-full max-w-full overflow-hidden">
+        <div className="space-y-2 sm:space-y-3 w-full">
           {pendingTasks.slice(0, 5).map((task) => (
             <div
               key={task.id}
-              className="flex items-start justify-between gap-2 rounded-lg border bg-white p-2 sm:p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer dark:bg-gray-800"
+              className="flex items-start justify-between gap-2 rounded-lg border bg-white p-2 sm:p-3 shadow-sm hover:shadow-md transition-shadow cursor-pointer dark:bg-gray-800 w-full max-w-full overflow-hidden"
               onClick={() => handleTaskClick(task.id)}
             >
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
-                  <h4 className="font-medium text-xs sm:text-sm truncate">{task.title}</h4>
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1 min-w-0">
+                  <h4 className="font-medium text-xs sm:text-sm truncate min-w-0 flex-1">{task.title}</h4>
                   {task.checklistEnabled && (
                     <div className="flex items-center gap-1">
                       {task.checklistCompleted ? (
@@ -82,12 +82,12 @@ export function PendingTasksNotification() {
                   )}
                 </div>
                 {task.goalTitle && (
-                  <p className="text-xs text-muted-foreground truncate">
+                  <p className="text-xs text-muted-foreground truncate w-full">
                     Meta: {task.goalTitle}
                   </p>
                 )}
                 {task.message && (
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-1 break-words overflow-wrap-anywhere">
                     {task.message}
                   </p>
                 )}

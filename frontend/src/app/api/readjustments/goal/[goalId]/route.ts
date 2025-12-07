@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: { goalId: string } }
 ) {
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     const readjustments = await getReadjustmentsByGoalService(params.goalId, userId);
     return NextResponse.json(readjustments);
   } catch (error) {

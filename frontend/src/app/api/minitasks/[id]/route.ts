@@ -12,7 +12,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     const miniTask = await getMiniTaskService(params.id, userId);
     return NextResponse.json(miniTask);
   } catch (error) {
@@ -29,7 +29,7 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     const body = await request.json();
     const data = updateMiniTaskSchema.parse(body);
     

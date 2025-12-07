@@ -6,9 +6,13 @@ import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import type { GoalResponse } from '@smarter-app/shared';
 import { CheckCircle2, Clock, FileText } from 'lucide-react';
+import { GoalProgressBar } from './GoalProgressBar';
+import { calculateGoalProgress } from '../utils/calculateGoalProgress';
 
 interface GoalCardProps {
-  goal: GoalResponse;
+  goal: GoalResponse & {
+    miniTasks?: Array<{ id: string; status: string }>;
+  };
 }
 
 const statusLabels: Record<string, string> = {
@@ -26,6 +30,23 @@ const statusColors: Record<string, string> = {
 };
 
 export function GoalCard({ goal }: GoalCardProps) {
+  // Debug: verificar que las minitasks estén llegando
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[GoalCard]', {
+      goalId: goal.id,
+      goalTitle: goal.title,
+      miniTasksCount: goal.miniTasks?.length || 0,
+      miniTasks: goal.miniTasks,
+    });
+  }
+  
+  // Calcular progreso desde las minitasks
+  const progress = calculateGoalProgress(goal.miniTasks || []);
+  
+  // El progreso se calcula siempre basado en las minitasks completadas
+  // No forzamos 100% solo porque la goal esté en estado COMPLETED
+  const finalProgress = progress;
+
   return (
     <Link href={`/goals/${goal.id}`}>
       <div className="bg-card border rounded-lg p-4 hover:shadow-md transition-shadow">
@@ -42,6 +63,18 @@ export function GoalCard({ goal }: GoalCardProps) {
           <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
             {goal.description}
           </p>
+        )}
+
+        {/* Barra de progreso - Solo mostrar si hay minitasks o si la goal está activa/completada */}
+        {(goal.status === 'ACTIVE' || goal.status === 'COMPLETED' || finalProgress.total > 0) && (
+          <div className="mb-3">
+            <GoalProgressBar
+              completed={finalProgress.completed}
+              total={finalProgress.total}
+              percentage={finalProgress.percentage}
+              size="sm"
+            />
+          </div>
         )}
 
         <div className="flex items-center gap-4 text-sm text-muted-foreground">

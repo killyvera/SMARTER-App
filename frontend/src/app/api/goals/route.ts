@@ -14,9 +14,22 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get('status');
   
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     
     const goals = await getGoalsService(userId, status ? { status } : undefined);
+    
+    // Debug: verificar que las minitasks estén incluidas
+    if (process.env.NODE_ENV === 'development') {
+      goals.forEach(goal => {
+        console.log('[GET /api/goals]', {
+          goalId: goal.id,
+          goalTitle: goal.title,
+          miniTasksCount: (goal as any).miniTasks?.length || 0,
+          miniTasks: (goal as any).miniTasks,
+        });
+      });
+    }
+    
     const duration = Date.now() - startTime;
     logApiRequest('GET', `/api/goals${status ? `?status=${status}` : ''}`, 200, duration);
     
@@ -36,7 +49,7 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
   
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     const body = await request.json();
     const data = createGoalSchema.parse(body);
     

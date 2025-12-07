@@ -119,11 +119,18 @@ export default function SettingsPage() {
       // Recargar estado para actualizar hasCredentials
       const status = await apiRequest<{
         hasCredentials: boolean;
+        hasEnabledCredentials: boolean;
       }>('/auth/biometric/status', {
         method: 'POST',
         body: JSON.stringify({ email: user?.email }),
       });
       setHasCredentials(status.hasCredentials);
+      
+      // Si no hay credenciales habilitadas, limpiar la bandera
+      if (typeof window !== 'undefined' && !status.hasEnabledCredentials) {
+        localStorage.removeItem('biometricConfigured');
+        localStorage.removeItem('lastBiometricEmail');
+      }
     } catch (error) {
       console.error('Error al eliminar credencial:', error);
       alert('Error al eliminar la credencial');
@@ -138,6 +145,20 @@ export default function SettingsPage() {
         body: JSON.stringify({ enabled }),
       });
       setBiometricEnabled(enabled);
+      
+      // Actualizar localStorage
+      if (typeof window !== 'undefined') {
+        if (enabled) {
+          localStorage.setItem('biometricConfigured', 'true');
+          if (user?.email) {
+            localStorage.setItem('lastBiometricEmail', user.email);
+          }
+        } else {
+          // Si se desactiva, limpiar la bandera
+          localStorage.removeItem('biometricConfigured');
+          localStorage.removeItem('lastBiometricEmail');
+        }
+      }
       
       // Si se activa pero no hay credenciales, mostrar diálogo de registro
       if (enabled && !hasCredentials && isAvailable) {

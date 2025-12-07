@@ -5,7 +5,7 @@ import { getUserId } from '@/lib/auth/getUserId';
 
 export async function POST(request: NextRequest) {
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     const body = await request.json();
     const data = createReadjustmentSchema.parse(body);
     

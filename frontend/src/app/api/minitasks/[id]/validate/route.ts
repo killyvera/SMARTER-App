@@ -16,7 +16,7 @@ export async function POST(
   });
   
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     console.log('✅ [API] Usuario obtenido:', { userId });
     
     console.log('🚀 [API] Llamando a validateMiniTaskService...');

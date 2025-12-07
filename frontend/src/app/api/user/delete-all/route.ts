@@ -7,7 +7,7 @@ export async function DELETE(request: NextRequest) {
   const startTime = Date.now();
   
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     
     // Borrar en cascada (orden importante por foreign keys)
     await prisma.suggestedMiniTask.deleteMany({

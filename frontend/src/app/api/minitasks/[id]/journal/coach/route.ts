@@ -11,7 +11,7 @@ export async function POST(
   const startTime = Date.now();
   
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     const body = await request.json();
     
     const { query, includeHistory } = coachQuerySchema.parse(body);

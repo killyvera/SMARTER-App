@@ -56,6 +56,12 @@ export async function findGoalsByUser(
     },
     include: {
       smarterScore: true,
+      miniTasks: {
+        select: {
+          id: true,
+          status: true,
+        },
+      },
       _count: {
         select: {
           miniTasks: true,

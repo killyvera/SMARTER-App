@@ -10,7 +10,7 @@ export async function POST(
   const startTime = Date.now();
   
   try {
-    const userId = await getUserId();
+    const userId = await getUserId(request);
     const result = await unlockMiniTaskService(params.id, userId);
     
     const duration = Date.now() - startTime;

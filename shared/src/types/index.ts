@@ -21,6 +21,11 @@ import type {
   createReadjustmentSchema,
   readjustmentResponseSchema,
 } from '../schemas/readjustmentSchemas';
+import type {
+  updateProfileSchema,
+  changePasswordSchema,
+  userProfileResponseSchema,
+} from '../schemas/userSchemas';
 
 export type GoalStatus = z.infer<typeof goalStatusSchema>;
 export type CreateGoalInput = z.infer<typeof createGoalSchema>;
@@ -40,6 +45,10 @@ export type AuthResponse = z.infer<typeof authResponseSchema>;
 
 export type CreateReadjustmentInput = z.infer<typeof createReadjustmentSchema>;
 export type ReadjustmentResponse = z.infer<typeof readjustmentResponseSchema>;
+
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+export type UserProfileResponse = z.infer<typeof userProfileResponseSchema>;
 
 // Tipos adicionales para Azure AI
 export interface SuggestedMiniTask {

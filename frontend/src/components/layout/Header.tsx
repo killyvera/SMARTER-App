@@ -5,10 +5,14 @@ import { useUIStore } from '@/stores/uiStore';
 import { Button } from '@/components/ui/button';
 import { Menu, LogOut, User } from 'lucide-react';
 import { AlarmBadge } from '@/components/alarms/AlarmBadge';
+import { useUserProfile } from '@/features/user/hooks/useUserProfile';
+import Image from 'next/image';
+import Link from 'next/link';
 
 export function Header() {
   const { user, logout } = useAuth();
   const { toggleSidebar } = useUIStore();
+  const { data: profile } = useUserProfile();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -31,10 +35,22 @@ export function Header() {
         <div className="ml-auto flex items-center gap-4">
           <AlarmBadge />
           {user && (
-            <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
-              <User className="h-4 w-4" />
-              <span>{user.email}</span>
-            </div>
+            <Link href="/profile" className="hidden md:flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+              {profile?.avatarUrl ? (
+                <Image
+                  src={profile.avatarUrl}
+                  alt={profile.name || user.email}
+                  width={32}
+                  height={32}
+                  className="rounded-full object-cover"
+                />
+              ) : (
+                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                  <User className="h-4 w-4" />
+                </div>
+              )}
+              <span className="max-w-[150px] truncate">{profile?.name || user.email}</span>
+            </Link>
           )}
           <Button
             variant="ghost"

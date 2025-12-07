@@ -164,6 +164,8 @@ export interface BiometricAvailability {
   isAvailable: boolean;
   isMobile: boolean;
   isSupported: boolean;
+  requiresSecureContext: boolean;
+  secureContextError?: string;
 }
 
 export function useBiometric() {
@@ -171,6 +173,7 @@ export function useBiometric() {
     isAvailable: false,
     isMobile: false,
     isSupported: false,
+    requiresSecureContext: false,
   });
 
   // Detectar disponibilidad de WebAuthn y si es móvil
@@ -182,6 +185,13 @@ export function useBiometric() {
       typeof navigator.credentials !== 'undefined' &&
       typeof navigator.credentials.create !== 'undefined';
 
+    // Verificar contexto seguro (HTTPS o localhost)
+    const isSecureContext = window.isSecureContext || 
+      window.location.protocol === 'https:' ||
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname === '[::1]';
+
     // Detectar si es dispositivo móvil
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
       navigator.userAgent
@@ -189,12 +199,22 @@ export function useBiometric() {
     ('ontouchstart' in window) ||
     (navigator.maxTouchPoints > 0);
 
-    // WebAuthn está disponible si está soportado, independientemente de si es móvil o PC
-    // En PC puede usar Windows Hello (PIN, huella, reconocimiento facial), en móvil puede usar huella digital
+    // WebAuthn requiere contexto seguro (HTTPS o localhost)
+    // Si no hay contexto seguro, puede ser por errores de certificado TLS
+    let secureContextError: string | undefined;
+    if (!isSecureContext && window.location.protocol === 'https:') {
+      secureContextError = 'WebAuthn no está disponible debido a errores de certificado TLS. Por favor, verifica que el certificado sea válido o usa localhost para desarrollo.';
+    } else if (!isSecureContext) {
+      secureContextError = 'WebAuthn requiere HTTPS o localhost. Por favor, usa una conexión segura.';
+    }
+
+    // WebAuthn está disponible solo si está soportado Y hay contexto seguro
     setAvailability({
-      isAvailable: isSupported, // Disponible si WebAuthn está soportado (móvil o PC)
+      isAvailable: isSupported && isSecureContext,
       isMobile,
       isSupported,
+      requiresSecureContext: isSecureContext,
+      secureContextError,
     });
   }, []);
 
@@ -274,6 +294,9 @@ export function useBiometric() {
         if (error.message.includes('NotSupportedError') || error.message.includes('NotAllowedError')) {
           throw new Error('Tu navegador o dispositivo no soporta autenticación biométrica, o no tienes un autenticador configurado.');
         }
+        if (error.message.includes('tls') || error.message.includes('certificate') || error.message.includes('secure context')) {
+          throw new Error('WebAuthn no está disponible debido a problemas de certificado TLS. Por favor, verifica que estés usando HTTPS válido o localhost para desarrollo.');
+        }
       }
       
       throw error;
@@ -329,6 +352,17 @@ export function useBiometric() {
       };
     } catch (error) {
       console.error('Error al autenticar con biometría:', error);
+      
+      // Proporcionar mensajes de error más claros
+      if (error instanceof Error) {
+        if (error.message.includes('tls') || error.message.includes('certificate') || error.message.includes('secure context')) {
+          throw new Error('WebAuthn no está disponible debido a problemas de certificado TLS. Por favor, verifica que estés usando HTTPS válido o localhost para desarrollo.');
+        }
+        if (error.message.includes('NotSupportedError') || error.message.includes('NotAllowedError')) {
+          throw new Error('No se pudo autenticar. Asegúrate de que tu navegador soporte WebAuthn y que estés usando HTTPS o localhost.');
+        }
+      }
+      
       throw error;
     }
   }, []);

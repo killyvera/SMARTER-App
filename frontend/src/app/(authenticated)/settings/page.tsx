@@ -11,6 +11,7 @@ import { apiRequest } from '@/lib/api';
 import { AlertTriangle, Trash2, Fingerprint, Smartphone, Monitor, Power, PowerOff } from 'lucide-react';
 import { useBiometric } from '@/hooks/useBiometric';
 import { BiometricSetupDialog } from '@/components/biometric/BiometricSetupDialog';
+import { ThemeSelector } from '@/components/theme/ThemeSelector';
 
 export default function SettingsPage() {
   const { logout, user } = useAuth();
@@ -218,6 +219,9 @@ export default function SettingsPage() {
           </CardHeader>
         </Card>
       )}
+
+      {/* Selector de Tema */}
+      <ThemeSelector />
 
       {/* Sección de Autenticación Biométrica - Solo mostrar si WebAuthn está soportado */}
       {isAvailable && (

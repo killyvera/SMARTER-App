@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useUIStore } from '@/stores/uiStore';
-import { Home, Target, CheckSquare, Settings, User, StickyNote } from 'lucide-react';
+import { Home, Target, CheckSquare, Settings, User, StickyNote, HelpCircle, BookOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navigation = [
@@ -11,6 +11,8 @@ const navigation = [
   { name: 'Metas', href: '/goals', icon: Target },
   { name: 'MiniTasks', href: '/minitasks', icon: CheckSquare },
   { name: 'Tabloid', href: '/tabloid', icon: StickyNote },
+  { name: 'FAQ', href: '/faq', icon: HelpCircle },
+  { name: 'SMARTER', href: '/smarter', icon: BookOpen },
   { name: 'Perfil', href: '/profile', icon: User },
   { name: 'Configuración', href: '/settings', icon: Settings },
 ];

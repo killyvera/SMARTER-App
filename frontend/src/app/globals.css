@@ -47,6 +47,331 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
   }
+
+  .cyberpunk {
+    /* Fondo oscuro con tinte púrpura/azul muy oscuro */
+    --background: 260 40% 6%;
+    --foreground: 180 100% 97%;
+    --card: 260 45% 10%;
+    --card-foreground: 180 100% 97%;
+    --popover: 260 45% 10%;
+    --popover-foreground: 180 100% 97%;
+    
+    /* Primary: Cyan neón brillante (como Cyberpunk 2077) */
+    --primary: 180 100% 60%;
+    --primary-foreground: 260 40% 6%;
+    
+    /* Secondary: Magenta/Pink neón vibrante */
+    --secondary: 320 100% 60%;
+    --secondary-foreground: 180 100% 97%;
+    
+    /* Muted: Púrpura oscuro con tinte cyan */
+    --muted: 260 50% 15%;
+    --muted-foreground: 180 80% 75%;
+    
+    /* Accent: Verde neón (matrix style) */
+    --accent: 120 100% 50%;
+    --accent-foreground: 260 40% 6%;
+    
+    /* Destructive: Rojo neón brillante */
+    --destructive: 0 100% 55%;
+    --destructive-foreground: 180 100% 97%;
+    
+    /* Borders: Cyan neón con brillo */
+    --border: 180 100% 50%;
+    --input: 180 100% 50%;
+    --ring: 180 100% 60%;
+  }
+
+  /* Efectos adicionales para tema cyberpunk */
+  .cyberpunk * {
+    text-shadow: 0 0 10px hsl(var(--primary) / 0.3);
+  }
+
+  .cyberpunk .border-primary,
+  .cyberpunk [class*="border-primary"] {
+    box-shadow: 0 0 10px hsl(var(--primary) / 0.5),
+                0 0 20px hsl(var(--primary) / 0.3),
+                inset 0 0 10px hsl(var(--primary) / 0.1);
+  }
+
+  .cyberpunk button.primary,
+  .cyberpunk [class*="bg-primary"] {
+    box-shadow: 0 0 15px hsl(var(--primary) / 0.6),
+                0 0 30px hsl(var(--primary) / 0.4);
+  }
+}
+
+/* Tipografía cyberpunk - solo para el tema cyberpunk */
+.cyberpunk body,
+.cyberpunk * {
+  font-family: var(--font-orbitron), 'Orbitron', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+  letter-spacing: 0.02em;
+}
+
+.cyberpunk h1,
+.cyberpunk h2,
+.cyberpunk h3,
+.cyberpunk h4,
+.cyberpunk h5,
+.cyberpunk h6 {
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.cyberpunk button,
+.cyberpunk .font-semibold,
+.cyberpunk .font-bold {
+  letter-spacing: 0.03em;
+}
+
+/* Efecto Glitch para tema cyberpunk - Variación 1: Glitch básico */
+@keyframes glitch-1 {
+  0% {
+    transform: translate(0);
+    filter: hue-rotate(0deg);
+  }
+  10% {
+    transform: translate(-2px, 2px);
+    filter: hue-rotate(90deg);
+  }
+  20% {
+    transform: translate(-2px, -2px);
+    filter: hue-rotate(180deg);
+  }
+  30% {
+    transform: translate(2px, 2px);
+    filter: hue-rotate(270deg);
+  }
+  40% {
+    transform: translate(2px, -2px);
+    filter: hue-rotate(360deg);
+  }
+  50% {
+    transform: translate(-2px, 2px);
+    filter: hue-rotate(90deg);
+  }
+  60% {
+    transform: translate(-2px, -2px);
+    filter: hue-rotate(180deg);
+  }
+  70% {
+    transform: translate(2px, 2px);
+    filter: hue-rotate(270deg);
+  }
+  80% {
+    transform: translate(-2px, -2px);
+    filter: hue-rotate(360deg);
+  }
+  90% {
+    transform: translate(2px, 2px);
+    filter: hue-rotate(90deg);
+  }
+  100% {
+    transform: translate(0);
+    filter: hue-rotate(0deg);
+  }
+}
+
+/* Variación 2: Glitch con pixelación */
+@keyframes glitch-2 {
+  0% {
+    transform: translate(0) scale(1);
+    filter: hue-rotate(0deg) blur(0px);
+  }
+  15% {
+    transform: translate(-3px, 3px) scale(1.01);
+    filter: hue-rotate(120deg) blur(1px);
+  }
+  30% {
+    transform: translate(3px, -3px) scale(0.99);
+    filter: hue-rotate(240deg) blur(2px);
+  }
+  45% {
+    transform: translate(-3px, -3px) scale(1.01);
+    filter: hue-rotate(360deg) blur(1px);
+  }
+  60% {
+    transform: translate(3px, 3px) scale(0.99);
+    filter: hue-rotate(120deg) blur(2px);
+  }
+  75% {
+    transform: translate(-2px, 2px) scale(1);
+    filter: hue-rotate(240deg) blur(1px);
+  }
+  100% {
+    transform: translate(0) scale(1);
+    filter: hue-rotate(0deg) blur(0px);
+  }
+}
+
+/* Variación 3: Glitch intenso con pixelación y distorsión */
+@keyframes glitch-3 {
+  0% {
+    transform: translate(0) scale(1) skew(0deg);
+    filter: hue-rotate(0deg) blur(0px) contrast(1);
+  }
+  10% {
+    transform: translate(-5px, 5px) scale(1.02) skew(1deg);
+    filter: hue-rotate(90deg) blur(2px) contrast(1.2);
+  }
+  20% {
+    transform: translate(5px, -5px) scale(0.98) skew(-1deg);
+    filter: hue-rotate(180deg) blur(3px) contrast(0.8);
+  }
+  30% {
+    transform: translate(-5px, -5px) scale(1.02) skew(1deg);
+    filter: hue-rotate(270deg) blur(2px) contrast(1.3);
+  }
+  40% {
+    transform: translate(5px, 5px) scale(0.98) skew(-1deg);
+    filter: hue-rotate(360deg) blur(3px) contrast(0.7);
+  }
+  50% {
+    transform: translate(-3px, 3px) scale(1.01) skew(0.5deg);
+    filter: hue-rotate(90deg) blur(1px) contrast(1.1);
+  }
+  60% {
+    transform: translate(3px, -3px) scale(0.99) skew(-0.5deg);
+    filter: hue-rotate(180deg) blur(2px) contrast(0.9);
+  }
+  70% {
+    transform: translate(-4px, 4px) scale(1.01) skew(1deg);
+    filter: hue-rotate(270deg) blur(1px) contrast(1.2);
+  }
+  80% {
+    transform: translate(4px, -4px) scale(0.99) skew(-1deg);
+    filter: hue-rotate(360deg) blur(2px) contrast(0.8);
+  }
+  90% {
+    transform: translate(-2px, 2px) scale(1) skew(0deg);
+    filter: hue-rotate(90deg) blur(1px) contrast(1);
+  }
+  100% {
+    transform: translate(0) scale(1) skew(0deg);
+    filter: hue-rotate(0deg) blur(0px) contrast(1);
+  }
+}
+
+@keyframes glitch-scan {
+  0% {
+    clip-path: inset(0 0 0 0);
+  }
+  10% {
+    clip-path: inset(20% 0 60% 0);
+  }
+  20% {
+    clip-path: inset(60% 0 20% 0);
+  }
+  30% {
+    clip-path: inset(40% 0 40% 0);
+  }
+  40% {
+    clip-path: inset(80% 0 10% 0);
+  }
+  50% {
+    clip-path: inset(10% 0 80% 0);
+  }
+  60% {
+    clip-path: inset(30% 0 70% 0);
+  }
+  70% {
+    clip-path: inset(70% 0 30% 0);
+  }
+  80% {
+    clip-path: inset(50% 0 50% 0);
+  }
+  90% {
+    clip-path: inset(0 0 0 0);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes pixelate {
+  0% {
+    image-rendering: auto;
+    image-rendering: crisp-edges;
+  }
+  25% {
+    image-rendering: pixelated;
+  }
+  50% {
+    image-rendering: auto;
+  }
+  75% {
+    image-rendering: pixelated;
+  }
+  100% {
+    image-rendering: auto;
+  }
+}
+
+/* Clases para diferentes tipos de glitch */
+.cyberpunk.glitch-active-1 {
+  animation: glitch-1 var(--glitch-duration) cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.cyberpunk.glitch-active-2 {
+  animation: glitch-2 var(--glitch-duration) cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  image-rendering: pixelated;
+}
+
+.cyberpunk.glitch-active-3 {
+  animation: glitch-3 var(--glitch-duration) cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  image-rendering: pixelated;
+}
+
+.cyberpunk.glitch-active-1::before,
+.cyberpunk.glitch-active-2::before,
+.cyberpunk.glitch-active-3::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
+  animation: glitch-scan var(--glitch-duration) cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: screen;
+}
+
+.cyberpunk.glitch-active-1::after,
+.cyberpunk.glitch-active-2::after,
+.cyberpunk.glitch-active-3::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.15) 0px,
+      rgba(0, 0, 0, 0.15) 1px,
+      transparent 1px,
+      transparent 2px
+    );
+  animation: glitch-scan var(--glitch-duration) cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  pointer-events: none;
+  z-index: 9998;
+  mix-blend-mode: overlay;
+}
+
+/* Efecto de pixelación adicional para variaciones 2 y 3 */
+.cyberpunk.glitch-active-2 *,
+.cyberpunk.glitch-active-3 * {
+  animation: pixelate var(--glitch-duration) steps(4, end) both;
 }
 
 @layer base {

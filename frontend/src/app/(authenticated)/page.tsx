@@ -55,7 +55,7 @@ export default function DashboardPage() {
       <PendingTasksNotification />
 
       {/* Cards de estadísticas principales */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total de Metas</CardTitle>
@@ -213,7 +213,7 @@ export default function DashboardPage() {
           <CardDescription>Accesos directos a las funciones principales</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
             <Button asChild variant="outline" className="h-auto flex-col items-start p-4">
               <Link href="/goals/new" className="w-full">
                 <Plus className="h-5 w-5 mb-2" />

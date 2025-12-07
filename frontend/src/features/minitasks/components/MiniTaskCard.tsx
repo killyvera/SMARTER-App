@@ -102,27 +102,31 @@ export function MiniTaskCard({ miniTask, onStatusChange, onUnlock }: MiniTaskCar
 
   return (
     <div 
-      className="bg-card border rounded-lg p-4 cursor-pointer hover:border-primary transition-colors"
+      className="bg-card border rounded-lg p-3 sm:p-4 cursor-pointer hover:border-primary transition-colors w-full"
       onClick={handleClick}
     >
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-start gap-2 flex-1">
-          <Icon className="h-5 w-5 mt-0.5 flex-shrink-0 text-muted-foreground" />
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex items-start gap-2 flex-1 min-w-0">
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5 mt-0.5 flex-shrink-0 text-muted-foreground" />
           <div className="flex-1 min-w-0">
             <h4 
-              className="font-medium text-base sm:truncate" 
+              className="font-semibold text-base sm:text-lg break-words overflow-wrap-anywhere mb-1" 
               title={miniTask.title}
             >
-              <span className="sm:hidden">{truncateByWords(miniTask.title, 50)}</span>
-              <span className="hidden sm:inline">{miniTask.title}</span>
+              {miniTask.title}
             </h4>
-            <div className="flex items-center gap-2 mt-1">
+            {miniTask.description && (
+              <p className="text-sm text-muted-foreground mb-2 line-clamp-2 break-words overflow-wrap-anywhere">
+                {miniTask.description}
+              </p>
+            )}
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs text-muted-foreground">{taskType}</span>
               {!isUnlocked && (
-                <Lock className="h-3 w-3 text-muted-foreground" />
+                <Lock className="h-3 w-3 text-muted-foreground flex-shrink-0" />
               )}
               {isUnlocked && (
-                <Unlock className="h-3 w-3 text-green-600" />
+                <Unlock className="h-3 w-3 text-green-600 flex-shrink-0" />
               )}
             </div>
           </div>

@@ -13,8 +13,8 @@ export function AppLayout({ children }: AppLayoutProps) {
       <Header />
       <div className="flex w-full">
         <Sidebar />
-        <main className="flex-1 md:ml-64 transition-all duration-300 w-full max-w-full overflow-x-hidden">
-          <div className="container mx-auto p-3 sm:p-4 md:p-6 w-full max-w-full">
+        <main className="flex-1 md:ml-64 transition-all duration-300 w-full max-w-full overflow-x-hidden min-w-0">
+          <div className="w-full max-w-full p-3 sm:p-4 md:p-6">
             {children}
           </div>
         </main>

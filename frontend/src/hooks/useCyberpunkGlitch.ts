@@ -24,8 +24,8 @@ export function useCyberpunkGlitch() {
       // Seleccionar tipo de glitch aleatorio (1, 2 o 3)
       const glitchType = Math.floor(Math.random() * 3) + 1; // 1, 2 o 3
       
-      // Duración aleatoria del glitch (entre 600ms y 1500ms) - más larga
-      const glitchDuration = Math.random() * 900 + 600; // 600-1500ms
+      // Duración aleatoria del glitch (entre 200ms y 400ms) - razonable y no intrusivo
+      const glitchDuration = Math.random() * 200 + 200; // 200-400ms
       
       // Establecer duración como variable CSS
       htmlElement.style.setProperty('--glitch-duration', `${glitchDuration}ms`);
@@ -42,13 +42,13 @@ export function useCyberpunkGlitch() {
         htmlElement.style.removeProperty('--glitch-duration');
       }, glitchDuration);
 
-      // Programar próximo glitch (entre 2 y 5 segundos) - más frecuente
-      const nextGlitchDelay = Math.random() * 3000 + 2000; // 2-5 segundos (aleatorio)
+      // Programar próximo glitch (entre 15 y 25 segundos) - intervalo razonable
+      const nextGlitchDelay = Math.random() * 10000 + 15000; // 15-25 segundos (aleatorio)
       nextGlitchTimeout = setTimeout(triggerGlitch, nextGlitchDelay);
     };
 
-    // Iniciar primer glitch después de un delay aleatorio (2-4 segundos) - más rápido
-    const initialDelay = Math.random() * 2000 + 2000; // 2-4 segundos (aleatorio)
+    // Iniciar primer glitch después de un delay aleatorio (8-12 segundos) - tiempo razonable
+    const initialDelay = Math.random() * 4000 + 8000; // 8-12 segundos (aleatorio)
     glitchTimeout = setTimeout(triggerGlitch, initialDelay);
 
     // Cleanup

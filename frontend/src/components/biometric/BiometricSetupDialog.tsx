@@ -24,7 +24,7 @@ export function BiometricSetupDialog({
   onOpenChange,
   onSuccess,
 }: BiometricSetupDialogProps) {
-  const { registerBiometric } = useBiometric();
+  const { registerBiometric, isAvailable, secureContextError } = useBiometric();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -88,17 +88,33 @@ export function BiometricSetupDialog({
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="flex flex-col items-center gap-4 py-4">
-                <Fingerprint className="h-16 w-16 text-muted-foreground" />
-                <div className="text-center space-y-2">
-                  <p className="text-sm font-medium">
-                    ¿Deseas configurar la autenticación biométrica?
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Podrás usar tu método de autenticación (PIN, huella digital, reconocimiento facial, etc.) para iniciar sesión de forma rápida y segura.
-                  </p>
+              {secureContextError ? (
+                <div className="flex flex-col items-center gap-4 py-4">
+                  <AlertCircle className="h-16 w-16 text-yellow-500" />
+                  <div className="text-center space-y-2">
+                    <p className="text-sm font-medium text-yellow-700 dark:text-yellow-400">
+                      Autenticación biométrica no disponible
+                    </p>
+                    <p className="text-xs text-yellow-600 dark:text-yellow-500">
+                      {secureContextError}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div className="flex flex-col items-center gap-4 py-4">
+                    <Fingerprint className="h-16 w-16 text-muted-foreground" />
+                    <div className="text-center space-y-2">
+                      <p className="text-sm font-medium">
+                        ¿Deseas configurar la autenticación biométrica?
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Podrás usar tu método de autenticación (PIN, huella digital, reconocimiento facial, etc.) para iniciar sesión de forma rápida y segura.
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
 
               {error && (
                 <div className="flex items-start gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
@@ -127,7 +143,7 @@ export function BiometricSetupDialog({
               <Button
                 type="button"
                 onClick={handleRegister}
-                disabled={isLoading}
+                disabled={isLoading || !isAvailable || !!secureContextError}
               >
                 {isLoading ? (
                   <>

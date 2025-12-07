@@ -15,7 +15,7 @@ import { BiometricSetupDialog } from '@/components/biometric/BiometricSetupDialo
 export default function SettingsPage() {
   const { logout, user } = useAuth();
   const router = useRouter();
-  const { isAvailable, registerBiometric } = useBiometric();
+  const { isAvailable, registerBiometric, secureContextError } = useBiometric();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
@@ -204,6 +204,20 @@ export default function SettingsPage() {
           Gestiona tu cuenta y configuración
         </p>
       </div>
+
+      {/* Mensaje de advertencia si hay problemas de contexto seguro */}
+      {secureContextError && (
+        <Card className="border-yellow-500/20 bg-yellow-500/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-yellow-700 dark:text-yellow-400">
+              ⚠️ Autenticación biométrica no disponible
+            </CardTitle>
+            <CardDescription className="text-yellow-600 dark:text-yellow-500">
+              {secureContextError}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
 
       {/* Sección de Autenticación Biométrica - Solo mostrar si WebAuthn está soportado */}
       {isAvailable && (

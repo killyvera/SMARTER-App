@@ -30,7 +30,7 @@ export default function LoginPage() {
   const [showSetupDialog, setShowSetupDialog] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState<{ id: string; email: string } | null>(null);
   
-  const { isAvailable, authenticateBiometric } = useBiometric();
+  const { isAvailable, authenticateBiometric, secureContextError } = useBiometric();
 
   // Cargar email y estado de biometría desde localStorage al cargar la página
   useEffect(() => {
@@ -201,6 +201,14 @@ export default function LoginPage() {
             </Link>
           </p>
         </div>
+
+        {/* Mensaje de advertencia si hay problemas de contexto seguro */}
+        {secureContextError && (
+          <div className="rounded-md bg-yellow-500/10 border border-yellow-500/20 p-3 text-sm text-yellow-700 dark:text-yellow-400">
+            <p className="font-medium">⚠️ Autenticación biométrica no disponible</p>
+            <p className="mt-1">{secureContextError}</p>
+          </div>
+        )}
 
         {/* Botón de autenticación biométrica - Solo mostrar si WebAuthn está soportado y hay credenciales habilitadas */}
         {isAvailable && biometricStatus?.biometricEnabled && biometricStatus?.hasEnabledCredentials && (

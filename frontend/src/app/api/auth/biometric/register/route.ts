@@ -75,14 +75,15 @@ export async function POST(request: NextRequest) {
     let challenge: string;
     if (typeof options.challenge === 'string') {
       challenge = options.challenge;
-    } else if (options.challenge instanceof Buffer) {
-      challenge = options.challenge.toString('base64url');
+    } else if ((options.challenge as any) instanceof Buffer) {
+      challenge = (options.challenge as Buffer).toString('base64url');
     } else {
       // Intentar convertir si es ArrayBuffer/Uint8Array
       try {
-        const arr = options.challenge instanceof Uint8Array 
-          ? options.challenge 
-          : new Uint8Array(options.challenge as ArrayBuffer);
+        const challengeAny = options.challenge as any;
+        const arr = challengeAny instanceof Uint8Array 
+          ? challengeAny 
+          : new Uint8Array(challengeAny as ArrayBuffer);
         challenge = Buffer.from(arr).toString('base64url');
       } catch (err) {
         console.error('Challenge no convertible:', err, typeof options.challenge);
@@ -110,13 +111,14 @@ export async function POST(request: NextRequest) {
         let id: string;
         if (typeof cred.id === 'string') {
           id = cred.id;
-        } else if (cred.id instanceof Buffer) {
-          id = cred.id.toString('base64url');
+        } else if ((cred.id as any) instanceof Buffer) {
+          id = (cred.id as Buffer).toString('base64url');
         } else {
           try {
-            const arr = cred.id instanceof Uint8Array 
-              ? cred.id 
-              : new Uint8Array(cred.id as ArrayBuffer);
+            const credIdAny = cred.id as any;
+            const arr = credIdAny instanceof Uint8Array 
+              ? credIdAny 
+              : new Uint8Array(credIdAny as ArrayBuffer);
             id = Buffer.from(arr).toString('base64url');
           } catch (err) {
             console.warn('excludeCredential ID no convertible, se omite:', err);
@@ -132,10 +134,10 @@ export async function POST(request: NextRequest) {
 
         return {
           id,
-          type: cred.type || 'public-key',
-          transports: cred.transports || [],
+          type: (cred.type || 'public-key') as 'public-key',
+          transports: (cred.transports || []) as any[],
         };
-      }).filter((c): c is { id: string; type: string; transports: string[] } => c !== null);
+      }).filter((c): c is { id: string; type: 'public-key'; transports: any[] } => c !== null);
     }
 
     return NextResponse.json({

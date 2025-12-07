@@ -224,6 +224,9 @@ export async function updateMiniTaskService(
     status: input.status,
     plannedHours: input.plannedHours,
     isSingleDayTask: input.isSingleDayTask,
+    color: input.color,
+    positionX: input.positionX,
+    positionY: input.positionY,
   });
 }
 

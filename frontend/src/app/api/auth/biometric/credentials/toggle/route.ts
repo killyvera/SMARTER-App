@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserId } from '@/lib/auth';
+import { getUserId } from '@/lib/auth/getUserId';
 import { 
   findBiometricCredentialByCredentialId,
   updateBiometricCredentialEnabled 

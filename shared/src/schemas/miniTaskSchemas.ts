@@ -18,6 +18,9 @@ export const updateMiniTaskSchema = z.object({
   status: miniTaskStatusSchema.optional(),
   plannedHours: z.number().positive().optional(),
   isSingleDayTask: z.boolean().optional(),
+  color: z.string().optional(),
+  positionX: z.number().optional(),
+  positionY: z.number().optional(),
 });
 
 export const miniTaskScoreSchema = z.object({

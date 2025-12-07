@@ -115,6 +115,7 @@ export async function generateRegistrationOptionsForUser(
     excludeCredentials: validExistingCredentials.length > 0
       ? validExistingCredentials.map((cred) => ({
           id: cred.idBuffer,
+          type: 'public-key' as const,
           transports: cred.transports,
         }))
       : undefined,
@@ -183,6 +184,7 @@ export async function generateAuthenticationOptionsForUser(
     timeout: 120000, // 2 minutos para dar más tiempo al usuario
     allowCredentials: validCredentials.map((cred) => ({
       id: cred.idBuffer,
+      type: 'public-key' as const,
       transports: cred.transports,
     })),
     userVerification: 'required',

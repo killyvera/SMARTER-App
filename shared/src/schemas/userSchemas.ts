@@ -26,7 +26,5 @@ export const userProfileResponseSchema = z.object({
   updatedAt: z.date(),
 });
 
-export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
-export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
-export type UserProfileResponse = z.infer<typeof userProfileResponseSchema>;
+// Los tipos se exportan desde types/index.ts para evitar duplicados
 

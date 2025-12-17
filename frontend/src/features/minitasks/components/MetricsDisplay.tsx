@@ -103,30 +103,55 @@ export function MetricsDisplay({ miniTask }: MetricsDisplayProps) {
   
   const { data: journalEntries } = useMiniTaskJournal(miniTask.id, dateRangeRef.current);
 
-  // Preparar datos para la gráfica
+  // Preparar datos para la gráfica combinando métricas y entradas del journal
   const chartData = useMemo(() => {
-    if (!miniTask.unlocked || !miniTask.metrics || miniTask.metrics.length === 0) {
+    if (!miniTask.unlocked) {
       return [];
     }
 
-    return miniTask.metrics.map(m => {
-      try {
-        const value = typeof m.value === 'string' ? JSON.parse(m.value) : m.value;
-        const date = new Date(m.recordedAt);
-        return {
-          fecha: date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
-          valor: typeof value === 'number' ? value : 0,
-          fechaCompleta: date,
-        };
-      } catch {
-        return {
-          fecha: new Date(m.recordedAt).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
-          valor: 0,
-          fechaCompleta: new Date(m.recordedAt),
-        };
-      }
-    }).reverse(); // Ordenar cronológicamente
-  }, [miniTask.metrics, miniTask.unlocked]);
+    const dataMap = new Map<string, { fecha: string; valor: number; fechaCompleta: Date }>();
+
+    // Agregar datos de métricas históricas
+    if (miniTask.metrics && miniTask.metrics.length > 0) {
+      miniTask.metrics.forEach(m => {
+        try {
+          const value = typeof m.value === 'string' ? JSON.parse(m.value) : m.value;
+          const date = new Date(m.recordedAt);
+          const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
+          
+          dataMap.set(dateKey, {
+            fecha: date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
+            valor: typeof value === 'number' ? value : 0,
+            fechaCompleta: date,
+          });
+        } catch {
+          // Ignorar métricas inválidas
+        }
+      });
+    }
+
+    // Agregar datos de entradas del journal (prioridad sobre métricas si hay conflicto de fecha)
+    if (journalEntries && journalEntries.length > 0) {
+      journalEntries.forEach(entry => {
+        if (entry.progressValue !== undefined && entry.progressValue !== null) {
+          const date = new Date(entry.entryDate);
+          const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
+          
+          // Las entradas del journal tienen prioridad porque son más recientes
+          dataMap.set(dateKey, {
+            fecha: date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }),
+            valor: entry.progressValue,
+            fechaCompleta: date,
+          });
+        }
+      });
+    }
+
+    // Convertir a array y ordenar cronológicamente
+    return Array.from(dataMap.values()).sort((a, b) => 
+      a.fechaCompleta.getTime() - b.fechaCompleta.getTime()
+    );
+  }, [miniTask.metrics, miniTask.unlocked, journalEntries]);
 
   if (!miniTask.unlocked) {
     return null;

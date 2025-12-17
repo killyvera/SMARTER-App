@@ -360,6 +360,18 @@ Plugins disponibles:
 - mobile-push: Para notificaciones push móviles (dispositivo)
 - chart: Para visualizar progreso con gráficas de barras, líneas, etc. usando Recharts
 
+INTERCONEXIÓN PLUGINS-JOURNAL:
+Los plugins están interconectados con el sistema de journal (diario de seguimiento). Cuando el usuario crea o actualiza una entrada del journal, los plugins reaccionan automáticamente:
+- calendar: Las entradas del journal actualizan el estado visual del calendario. Cuando se completa un día en el journal, el calendario muestra ese día como completado.
+- progress-tracker: Las entradas del journal con progressValue crean métricas automáticamente. El plugin rastrea el progreso numérico registrado en el journal.
+- chart: Visualiza datos combinados de métricas históricas y entradas recientes del journal. Los datos del journal tienen prioridad sobre métricas antiguas para mostrar información actualizada.
+- checklist: Los checklists completados crean automáticamente entradas del journal con checklistCompleted=true. Para checklists diarios, cada día completado genera una entrada del journal. Para eventos únicos, cuando todos los items están completados, se crea una entrada del journal.
+
+Flujo de datos:
+1. Usuario crea/actualiza entrada del journal → Plugins son notificados automáticamente
+2. Usuario completa checklist → Se crea/actualiza entrada del journal → Plugins son notificados
+3. Los plugins siempre reflejan el estado actual del journal para mantener sincronización
+
 IMPORTANTE - Plugins obligatorios:
 - SIEMPRE debes incluir "calendar" (para alarmas y seguimiento temporal)
 - SIEMPRE debes incluir "chart" (para visualización de progreso con gráficas)
@@ -646,14 +658,25 @@ Métricas actuales:
 - Progreso promedio: {avgProgress}
 - Tiempo total dedicado: {totalTimeSpent} minutos
 
+INTERCONEXIÓN PLUGINS-JOURNAL:
+Los plugins están interconectados con el journal y reaccionan automáticamente a cambios:
+- Cuando se crea/actualiza una entrada del journal, los plugins se actualizan automáticamente:
+  * calendar: El estado visual del calendario refleja las entradas del journal
+  * progress-tracker: Las entradas con progressValue crean métricas automáticamente
+  * chart: Visualiza datos combinados de métricas y entradas del journal (journal tiene prioridad)
+  * checklist: Los checklists completados crean entradas del journal automáticamente
+- El estado de todos los plugins está sincronizado con el journal
+- Al analizar el progreso, considera el estado de todos los plugins activos y cómo se relacionan con las entradas del journal
+
 Pregunta del usuario: {query}
 
 Tu tarea:
-1. Analizar el progreso según criterios SMARTER
+1. Analizar el progreso según criterios SMARTER considerando el estado de todos los plugins
 2. Responder la pregunta del usuario de manera específica y útil
-3. Proporcionar sugerencias accionables basadas en patrones detectados
+3. Proporcionar sugerencias accionables basadas en patrones detectados en el journal y plugins
 4. Ofrecer motivación y apoyo
-5. Alertar sobre posibles problemas (bajo progreso, obstáculos recurrentes, etc.)
+5. Alertar sobre posibles problemas (bajo progreso, obstáculos recurrentes, desincronización entre plugins, etc.)
+6. Considerar cómo los plugins están funcionando en conjunto con el journal para dar feedback más preciso
 
 Responde SOLO con un JSON válido en este formato exacto:
 {

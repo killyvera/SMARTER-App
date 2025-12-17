@@ -13,6 +13,11 @@ import type { MiniTaskCoachContext } from '@/types/miniTaskJournal';
 import { createMiniTaskMetric } from '@/repositories/miniTaskRepository';
 import { startOfDay } from 'date-fns';
 import type { CreateMiniTaskJournalEntryInput, UpdateMiniTaskJournalEntryInput } from '@/types/miniTaskJournal';
+import {
+  notifyJournalEntryCreated,
+  notifyJournalEntryUpdated,
+  notifyJournalEntryDeleted,
+} from './pluginEventService';
 
 export async function createMiniTaskJournalEntryService(
   userId: string,
@@ -57,7 +62,7 @@ export async function createMiniTaskJournalEntryService(
   
   if (existingEntry) {
     // Si existe, actualizar en lugar de crear
-    return updateMiniTaskJournalEntry(existingEntry.id, {
+    const updatedEntry = await updateMiniTaskJournalEntry(existingEntry.id, {
       progressValue: input.progressValue,
       progressUnit: input.progressUnit,
       notes: input.notes,
@@ -67,6 +72,15 @@ export async function createMiniTaskJournalEntryService(
       checklistCompleted: input.checklistCompleted,
       metricsData: input.metricsData,
     });
+    
+    // Notificar a los plugins sobre la actualización
+    // Obtener la entrada actualizada con todos los campos
+    const fullEntry = await findMiniTaskJournalEntryById(updatedEntry.id);
+    if (fullEntry && miniTask.unlocked) {
+      await notifyJournalEntryUpdated(fullEntry, miniTask);
+    }
+    
+    return updatedEntry;
   }
   
   // Crear nueva entrada
@@ -82,25 +96,13 @@ export async function createMiniTaskJournalEntryService(
     metricsData: input.metricsData,
   });
   
-  // Si hay progreso registrado, crear métrica automáticamente
-  if (input.progressValue !== undefined && miniTask.unlocked) {
-    const progressPlugin = miniTask.plugins?.find((p: any) => p.pluginId === 'progress-tracker' && p.enabled);
-    if (progressPlugin) {
-      try {
-        await createMiniTaskMetric(
-          miniTaskId,
-          'progress-tracker',
-          'progress',
-          input.progressValue,
-          {
-            unit: input.progressUnit,
-            entryDate: entryDate.toISOString(),
-            journalEntryId: entry.id,
-          }
-        );
-      } catch (error) {
-        console.warn('Error al crear métrica automática desde journal:', error);
-      }
+  // Notificar a los plugins sobre la nueva entrada
+  // La creación de métricas ahora se maneja en pluginEventService
+  if (miniTask.unlocked) {
+    // Obtener la entrada completa con todos los campos
+    const fullEntry = await findMiniTaskJournalEntryById(entry.id);
+    if (fullEntry) {
+      await notifyJournalEntryCreated(fullEntry, miniTask);
     }
   }
   
@@ -148,7 +150,18 @@ export async function updateMiniTaskJournalEntryService(
     throw new Error('No autorizado');
   }
   
-  return updateMiniTaskJournalEntry(entryId, input);
+  const updatedEntry = await updateMiniTaskJournalEntry(entryId, input);
+  
+  // Notificar a los plugins sobre la actualización
+  if (miniTask.unlocked) {
+    // Obtener la entrada actualizada completa
+    const fullEntry = await findMiniTaskJournalEntryById(updatedEntry.id);
+    if (fullEntry) {
+      await notifyJournalEntryUpdated(fullEntry, miniTask);
+    }
+  }
+  
+  return updatedEntry;
 }
 
 export async function deleteMiniTaskJournalEntryService(
@@ -168,7 +181,14 @@ export async function deleteMiniTaskJournalEntryService(
     throw new Error('No autorizado');
   }
   
-  return deleteMiniTaskJournalEntry(entryId);
+  const miniTaskId = entry.miniTaskId;
+  
+  await deleteMiniTaskJournalEntry(entryId);
+  
+  // Notificar a los plugins sobre la eliminación
+  if (miniTask.unlocked) {
+    await notifyJournalEntryDeleted(entryId, miniTaskId);
+  }
 }
 
 export async function queryCoachService(

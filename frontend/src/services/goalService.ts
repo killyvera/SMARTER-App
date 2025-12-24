@@ -35,7 +35,16 @@ export async function validateGoalService(
   options?: {
     acceptedTitle?: string;
     acceptedDescription?: string;
-    acceptedMiniTasks?: Array<{ title: string; description?: string; priority: number }>;
+    acceptedMiniTasks?: Array<{ 
+      title: string; 
+      description?: string; 
+      priority: number | string;
+      order?: number;
+      dependsOn?: string | null;
+      schedulingType?: string | null;
+      scheduledDate?: string | null;
+      scheduledTime?: string | null;
+    }>;
   }
 ) {
   const goal = await findGoalById(goalId, userId);
@@ -112,25 +121,62 @@ export async function validateGoalService(
         tasks: options.acceptedMiniTasks,
       });
       
-      for (const suggested of options.acceptedMiniTasks) {
+      // Primero crear todas las minitasks para tener sus IDs
+      const createdTasks: Array<{ id: string; title: string; order: number }> = [];
+      
+      // Ordenar por order si está disponible
+      const sortedTasks = [...options.acceptedMiniTasks].sort((a, b) => {
+        const orderA = (a as any).order ?? 999;
+        const orderB = (b as any).order ?? 999;
+        return orderA - orderB;
+      });
+      
+      for (const suggested of sortedTasks) {
         try {
-          // Crear como MiniTask real (no solo como SuggestedMiniTask)
+          // Convertir priority de string a número para SuggestedMiniTask (legacy)
+          const priorityNumber = suggested.priority === 'high' ? 10 : suggested.priority === 'medium' ? 5 : 1;
+          
+          // Resolver dependsOn: si es un título, buscar el ID de la minitask creada
+          let dependsOnId: string | null = null;
+          if ((suggested as any).dependsOn) {
+            const dependencyTitle = (suggested as any).dependsOn;
+            const dependencyTask = createdTasks.find(t => t.title === dependencyTitle);
+            if (dependencyTask) {
+              dependsOnId = dependencyTask.id;
+            }
+          }
+          
+          // Crear como MiniTask real con todos los campos
           const saved = await createMiniTask(goalId, {
             title: suggested.title,
             description: suggested.description,
-            // No hay deadline en las sugerencias, se puede agregar después
+            priority: (suggested as any).priority || null,
+            order: (suggested as any).order,
+            dependsOn: dependsOnId,
+            schedulingType: (suggested as any).schedulingType || null,
+            scheduledDate: (suggested as any).scheduledDate ? new Date((suggested as any).scheduledDate) : null,
+            scheduledTime: (suggested as any).scheduledTime || null,
           });
+          
+          createdTasks.push({
+            id: saved.id,
+            title: saved.title,
+            order: saved.order,
+          });
+          
           console.log('MiniTask creada exitosamente:', {
             id: saved.id,
             title: saved.title,
             status: saved.status,
+            order: saved.order,
+            priority: saved.priority,
           });
           
           // También guardar como SuggestedMiniTask para referencia/historial
           await createSuggestedMiniTask(goalId, {
             title: suggested.title,
             description: suggested.description,
-            priority: suggested.priority,
+            priority: priorityNumber,
           });
         } catch (error) {
           console.error('Error al guardar minitask:', {

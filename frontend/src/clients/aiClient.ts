@@ -86,7 +86,12 @@ export interface GoalValidationResponse {
   suggestedMiniTasks?: Array<{
     title: string;
     description?: string;
-    priority: number;
+    priority: string; // 'high' | 'medium' | 'low'
+    order?: number;
+    dependsOn?: string | null; // Título de la minitask dependiente
+    schedulingType?: string | null; // 'sequential' | 'parallel' | 'daily' | 'scheduled'
+    scheduledDate?: string | null; // ISO date string
+    scheduledTime?: string | null; // HH:mm format
   }>;
 }
 
@@ -154,10 +159,26 @@ Responde SOLO con un JSON válido en este formato exacto:
     {
       "title": "<título de minitarea sugerida - debe ser una acción concreta>",
       "description": "<descripción opcional de la minitarea>",
-      "priority": <número 1-10>
+      "priority": "<high|medium|low> - prioridad de la minitarea",
+      "order": <número 0-N> - orden sugerido (0 = primera, 1 = segunda, etc.),
+      "dependsOn": "<id de otra minitask o null> - si esta minitask depende de otra",
+      "schedulingType": "<sequential|parallel|daily|scheduled> - tipo de scheduling",
+      "scheduledDate": "<fecha ISO opcional> - si es scheduled, fecha específica",
+      "scheduledTime": "<HH:mm opcional> - si es scheduled, hora específica"
     }
   ]
-}`;
+}
+
+IMPORTANTE - ORDEN Y PRIORIDAD DE MINITASKS:
+- Analiza las minitareas sugeridas y asigna un orden lógico (order: 0, 1, 2...)
+- Considera dependencias naturales: algunas tareas deben completarse antes que otras
+- Asigna prioridad (high, medium, low) basada en importancia y urgencia
+- Determina schedulingType:
+  * sequential: debe completarse una tras otra
+  * parallel: pueden trabajarse en paralelo
+  * daily: tarea diaria repetitiva
+  * scheduled: fecha/hora específica
+- Si hay dependencias, indica dependsOn con el título de la minitask dependiente (el sistema la resolverá)`;
 
 const MINITASK_VALIDATION_PROMPT = `Eres un experto en metodología SMARTER para evaluación de minitareas. 
 Evalúa la siguiente minitarea y verifica que sea una ACCIÓN CONCRETA (no un resultado abstracto).

@@ -2,7 +2,7 @@
 
 import { useTheme } from '@/hooks/useTheme';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sun, Moon, Zap } from 'lucide-react';
+import { Sun, Moon, Zap, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function ThemeSelector() {
@@ -30,6 +30,13 @@ export function ThemeSelector() {
       description: 'Tema neón estilo cyberpunk',
       preview: 'bg-gradient-to-br from-purple-900 via-blue-900 to-purple-900',
     },
+    {
+      id: 'banana-cream' as const,
+      name: 'Banana Cream',
+      icon: Sparkles,
+      description: 'Tema kawaii crema cálido',
+      preview: 'bg-gradient-to-br from-yellow-50 via-amber-50 to-yellow-100',
+    },
   ];
 
   return (
@@ -44,7 +51,7 @@ export function ThemeSelector() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {themes.map((themeOption) => {
             const Icon = themeOption.icon;
             const isActive = theme === themeOption.id;

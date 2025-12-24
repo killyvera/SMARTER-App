@@ -39,7 +39,9 @@ export async function GET(request: NextRequest) {
     let goalsWithProgress = 0;
     
     goals.forEach(goal => {
-      const goalProgress = calculateGoalProgress(goal.miniTasks || []);
+      // Filtrar minitasks por goalId
+      const goalMiniTasks = miniTasks.filter(mt => mt.goalId === goal.id);
+      const goalProgress = calculateGoalProgress(goalMiniTasks);
       if (goalProgress.total > 0) {
         totalProgress += goalProgress.percentage;
         goalsWithProgress++;
@@ -53,7 +55,8 @@ export async function GET(request: NextRequest) {
     
     // Contar goals completadas basado en progreso de minitasks (100%) o status COMPLETED
     const completedGoalsByProgress = goals.filter(goal => {
-      const goalProgress = calculateGoalProgress(goal.miniTasks || []);
+      const goalMiniTasks = miniTasks.filter(mt => mt.goalId === goal.id);
+      const goalProgress = calculateGoalProgress(goalMiniTasks);
       return goalProgress.total > 0 && goalProgress.percentage === 100;
     }).length;
     

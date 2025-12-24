@@ -244,6 +244,41 @@ export async function updateMiniTaskService(
   return updatedMiniTask;
 }
 
+/**
+ * Verifica si una minitask puede desbloquearse basado en sus dependencias
+ */
+export async function checkDependencies(miniTaskId: string): Promise<{
+  canUnlock: boolean;
+  blockingTask?: { id: string; title: string };
+}> {
+  const miniTask = await findMiniTaskById(miniTaskId) as any;
+  
+  if (!miniTask || !miniTask.dependsOn) {
+    return { canUnlock: true };
+  }
+  
+  // Verificar que la minitask dependiente esté completada
+  const dependencyTask = await findMiniTaskById(miniTask.dependsOn) as any;
+  
+  if (!dependencyTask) {
+    // Si la dependencia no existe, permitir desbloquear (dependencia inválida)
+    console.warn(`⚠️ Dependencia ${miniTask.dependsOn} no encontrada para minitask ${miniTaskId}`);
+    return { canUnlock: true };
+  }
+  
+  if (dependencyTask.status !== 'COMPLETED') {
+    return {
+      canUnlock: false,
+      blockingTask: {
+        id: dependencyTask.id,
+        title: dependencyTask.title,
+      },
+    };
+  }
+  
+  return { canUnlock: true };
+}
+
 export async function unlockMiniTaskService(miniTaskId: string, userId: string) {
   console.log('=== UNLOCK MINITASK SERVICE - INICIO ===');
   console.log('Desbloqueando minitask (validar + mejorar + configurar):', { miniTaskId, userId });
@@ -260,6 +295,14 @@ export async function unlockMiniTaskService(miniTaskId: string, userId: string) 
   
   if (miniTask.unlocked) {
     throw new Error('La minitask ya está desbloqueada');
+  }
+  
+  // Verificar dependencias antes de desbloquear
+  const dependencyCheck = await checkDependencies(miniTaskId);
+  if (!dependencyCheck.canUnlock) {
+    throw new Error(
+      `No se puede desbloquear esta minitask. Debes completar primero: "${dependencyCheck.blockingTask?.title}"`
+    );
   }
   
   console.log('🤖 [UNLOCK] Llamando a IA para mejorar y configurar minitask...');

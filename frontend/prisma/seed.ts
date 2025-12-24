@@ -6,6 +6,9 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Iniciando seed...');
   console.log('🗑️  Limpiando base de datos...');
+  
+  // Fecha de referencia para datos históricos
+  const today = new Date();
 
   // Limpiar TODA la base de datos en orden correcto (respetando foreign keys)
   // Usar try-catch para manejar tablas que pueden no existir aún
@@ -87,11 +90,14 @@ async function main() {
       status: 'COMPLETED',
       deadline: new Date('2024-02-28'),
       unlocked: true,
+      order: 0, // Primera minitask
+      priority: 'high',
+      schedulingType: 'parallel',
       metricsConfig: JSON.stringify({
         unlocked: true,
         unlockedAt: new Date('2024-01-20').toISOString(),
         plugins: [
-          { id: 'calendar', config: { enabled: true, frequency: 'daily', alarmTimes: ['09:00'], checklistEnabled: false } },
+          { id: 'calendar', config: { enabled: true, frequency: 'daily', alarmTimes: ['09:00'], checklistEnabled: true, checklistLabel: 'Completar estudio diario de React' } },
           { id: 'chart', config: { enabled: true, chartType: 'line', metricType: 'horas-estudiadas', timeRange: 'week' } },
           { id: 'progress-tracker', config: { enabled: true, targetValue: 40, unit: 'horas' } },
           { id: 'reminder', config: { enabled: true, reminderTimes: ['09:00', '18:00'] } },
@@ -120,7 +126,7 @@ async function main() {
     data: {
       miniTaskId: mt1_1.id,
       pluginId: 'calendar',
-      config: JSON.stringify({ enabled: true, frequency: 'daily', alarmTimes: ['09:00'], checklistEnabled: false }),
+      config: JSON.stringify({ enabled: true, frequency: 'daily', alarmTimes: ['09:00'], checklistEnabled: true, checklistLabel: 'Completar estudio diario de React' }),
       enabled: true,
     },
   });
@@ -149,52 +155,131 @@ async function main() {
     },
   });
 
-  // Métricas históricas para mt1_1 (últimas 2 semanas - fechas recientes)
-  const today = new Date();
-  const baseDate1 = new Date(today);
-  baseDate1.setDate(baseDate1.getDate() - 14); // Hace 14 días
+  // Métricas históricas para mt1_1 (36 días - desde 2024-01-20 hasta 2024-02-25)
+  const baseDate1 = new Date('2024-01-20');
+  let totalHours1_1 = 0;
   
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < 36; i++) {
     const date = new Date(baseDate1);
     date.setDate(date.getDate() + i);
-    date.setHours(9, 0, 0, 0); // Normalizar hora
-    const hours = 1.5 + Math.random() * 2.5; // Entre 1.5 y 4 horas
+    date.setHours(9 + Math.floor(Math.random() * 3), 0, 0, 0); // Entre 09:00 y 12:00
+    
+    // Progresión realista: empezar con 1.5-2 horas, aumentar gradualmente
+    const progressFactor = i / 36; // 0 a 1
+    const baseHours = 1.5 + progressFactor * 1.5; // 1.5 a 3.0
+    const hours = baseHours + (Math.random() - 0.5) * 0.7; // Variación ±0.35
+    const clampedHours = Math.max(1.0, Math.min(4.0, hours));
+    totalHours1_1 += clampedHours;
+    
     await prisma.miniTaskMetric.create({
       data: {
         miniTaskId: mt1_1.id,
         pluginId: 'progress-tracker',
         metricType: 'progress',
-        value: JSON.stringify(hours),
-        metadata: JSON.stringify({ unit: 'horas', entryDate: date.toISOString() }),
+        value: JSON.stringify(clampedHours),
+        metadata: JSON.stringify({ 
+          unit: 'horas', 
+          entryDate: new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString(),
+          totalAcumulado: totalHours1_1.toFixed(1)
+        }),
         recordedAt: date,
       },
     });
   }
 
-  // Entradas del journal para mt1_1
-  for (let i = 0; i < 14; i++) {
+  // Entradas del journal para mt1_1 (36 días) - sincronizadas con métricas
+  const moods1_1 = ['positivo', 'neutral', 'negativo'];
+  const reactTopics = [
+    'Components', 'Props', 'State', 'Hooks', 'useState', 'useEffect',
+    'Event Handling', 'Conditional Rendering', 'Lists & Keys', 'Forms',
+    'Lifting State Up', 'Composition', 'Context API', 'Custom Hooks'
+  ];
+  
+  totalHours1_1 = 0;
+  for (let i = 0; i < 36; i++) {
     const date = new Date(baseDate1);
     date.setDate(date.getDate() + i);
-    date.setHours(0, 0, 0, 0); // Normalizar a inicio del día
-    const hours = 1.5 + Math.random() * 2.5;
-    const moods = ['positivo', 'neutral', 'negativo'];
-    const obstacles = i % 3 === 0 ? 'Falta de tiempo, Distracciones' : null;
+    date.setHours(0, 0, 0, 0);
     
-    await prisma.miniTaskJournalEntry.create({
+    // Mismo cálculo de horas que en métricas para sincronización
+    const progressFactor = i / 36;
+    const baseHours = 1.5 + progressFactor * 1.5;
+    const hours = baseHours + (Math.random() - 0.5) * 0.7;
+    const clampedHours = Math.max(1.0, Math.min(4.0, hours));
+    totalHours1_1 += clampedHours;
+    
+    const topicIndex = Math.floor(Math.random() * reactTopics.length);
+    const currentTopic = reactTopics[topicIndex];
+    const exercisesCompleted = Math.floor(clampedHours * 2.5);
+    const conceptsLearned = i % 5 === 0 ? 1 : 0;
+    
+    const notes = i % 2 === 0 ? [
+      `Estudié ${clampedHours.toFixed(1)} horas hoy. Trabajé en ${currentTopic}.`,
+      `Avancé con ${currentTopic}. Completé ${exercisesCompleted} ejercicios.`,
+      `Día productivo. ${clampedHours.toFixed(1)} horas de estudio enfocado en ${currentTopic}.`,
+      `Completé ejercicios de ${currentTopic}. ${exercisesCompleted} ejercicios resueltos.`,
+    ][Math.floor(Math.random() * 4)] : null;
+    
+    const obstacles = i % 4 === 0 ? [
+      'Falta de tiempo',
+      'Distracciones',
+      'Alguna confusión con conceptos nuevos',
+      null
+    ][Math.floor(Math.random() * 4)] : null;
+    
+    const journalEntry = await prisma.miniTaskJournalEntry.create({
       data: {
         miniTaskId: mt1_1.id,
         entryDate: date,
-        progressValue: hours,
+        progressValue: clampedHours,
         progressUnit: 'horas',
-        timeSpent: Math.round(hours * 60),
-        notes: i % 2 === 0 ? `Estudié ${hours.toFixed(1)} horas hoy. ${i % 3 === 0 ? 'Fue un día productivo.' : 'Avancé bien con los ejercicios.'}` : null,
+        timeSpent: Math.round(clampedHours * 60),
+        notes: notes,
         obstacles: obstacles,
-        mood: moods[i % 3],
-        metricsData: JSON.stringify({ horasEstudiadas: hours, ejerciciosCompletados: Math.floor(hours * 2) }),
+        mood: moods1_1[i % 3],
+        checklistCompleted: i % 5 !== 0, // Completado la mayoría de días
+        metricsData: JSON.stringify({ 
+          horasEstudiadas: clampedHours,
+          ejerciciosCompletados: exercisesCompleted,
+          conceptosAprendidos: conceptsLearned,
+          temaPrincipal: currentTopic,
+          totalAcumulado: totalHours1_1.toFixed(1),
+          leccionesCompletadas: Math.floor(i / 3)
+        }),
       },
     });
+    
+    // Crear métrica desde journal entry (simulando pluginEventService) si no existe
+    const existingMetric = await prisma.miniTaskMetric.findFirst({
+      where: {
+        miniTaskId: mt1_1.id,
+        pluginId: 'progress-tracker',
+        recordedAt: {
+          gte: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
+          lt: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1),
+        },
+      },
+    });
+    
+    if (!existingMetric) {
+      await prisma.miniTaskMetric.create({
+        data: {
+          miniTaskId: mt1_1.id,
+          pluginId: 'progress-tracker',
+          metricType: 'progress',
+          value: JSON.stringify(clampedHours),
+          metadata: JSON.stringify({
+            unit: 'horas',
+            entryDate: date.toISOString(),
+            journalEntryId: journalEntry.id,
+            eventType: 'created',
+          }),
+          recordedAt: new Date(date.getFullYear(), date.getMonth(), date.getDate(), 9, 0, 0),
+        },
+      });
+    }
   }
-  console.log('  ✅ mt1_1: 4 plugins, 14 métricas, 14 entradas journal');
+  console.log('  ✅ mt1_1: 4 plugins, 36 métricas, 36 entradas journal (con checklist diario)');
 
   const mt1_2 = await prisma.miniTask.create({
     data: {
@@ -203,6 +288,22 @@ async function main() {
       description: 'Dominar el App Router, Server Components y Data Fetching',
       status: 'COMPLETED',
       deadline: new Date('2024-04-15'),
+      unlocked: true,
+      order: 1, // Segunda minitask (depende de mt1_1)
+      priority: 'high',
+      dependsOn: mt1_1.id, // Depende de completar React Fundamentals primero
+      schedulingType: 'sequential',
+      metricsConfig: JSON.stringify({
+        unlocked: true,
+        unlockedAt: new Date('2024-03-01').toISOString(),
+        plugins: [
+          { id: 'calendar', config: { enabled: true, frequency: 'daily', alarmTimes: ['08:00', '20:00'], checklistEnabled: true, checklistLabel: 'Completar estudio diario de Next.js' } },
+          { id: 'chart', config: { enabled: true, chartType: 'line', metricType: 'horas-estudiadas', timeRange: 'week' } },
+          { id: 'progress-tracker', config: { enabled: true, targetValue: 50, unit: 'horas' } },
+          { id: 'reminder', config: { enabled: true, reminderTimes: ['08:00', '20:00'] } },
+          { id: 'notification', config: { enabled: true, frequency: 'daily' } },
+        ],
+      }),
       createdAt: new Date('2024-03-01'),
       updatedAt: new Date('2024-04-10'),
     },
@@ -221,6 +322,174 @@ async function main() {
     },
   });
 
+  // Plugins para mt1_2
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt1_2.id,
+      pluginId: 'calendar',
+      config: JSON.stringify({ enabled: true, frequency: 'daily', alarmTimes: ['08:00', '20:00'], checklistEnabled: true, checklistLabel: 'Completar estudio diario de Next.js' }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt1_2.id,
+      pluginId: 'chart',
+      config: JSON.stringify({ enabled: true, chartType: 'line', metricType: 'horas-estudiadas', timeRange: 'week' }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt1_2.id,
+      pluginId: 'progress-tracker',
+      config: JSON.stringify({ enabled: true, targetValue: 50, unit: 'horas' }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt1_2.id,
+      pluginId: 'reminder',
+      config: JSON.stringify({ enabled: true, reminderTimes: ['08:00', '20:00'] }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt1_2.id,
+      pluginId: 'notification',
+      config: JSON.stringify({ enabled: true, frequency: 'daily' }),
+      enabled: true,
+    },
+  });
+
+  // Métricas históricas para mt1_2 (40 días - 2024-03-01 a 2024-04-10)
+  const baseDate1_2 = new Date('2024-03-01');
+  let totalHours = 0;
+  
+  for (let i = 0; i < 40; i++) {
+    const date = new Date(baseDate1_2);
+    date.setDate(date.getDate() + i);
+    date.setHours(8 + Math.floor(Math.random() * 4), 0, 0, 0); // Entre 08:00 y 12:00
+    
+    // Progresión realista: empezar con 1-2 horas, aumentar gradualmente a 3-4 horas
+    const progressFactor = i / 40; // 0 a 1
+    const baseHours = 1.0 + progressFactor * 2.0; // 1.0 a 3.0
+    const hours = baseHours + (Math.random() - 0.5) * 0.8; // Variación ±0.4
+    const clampedHours = Math.max(0.5, Math.min(4.5, hours));
+    totalHours += clampedHours;
+    
+    await prisma.miniTaskMetric.create({
+      data: {
+        miniTaskId: mt1_2.id,
+        pluginId: 'progress-tracker',
+        metricType: 'progress',
+        value: JSON.stringify(clampedHours),
+        metadata: JSON.stringify({ 
+          unit: 'horas', 
+          entryDate: new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString(),
+          totalAcumulado: totalHours.toFixed(1)
+        }),
+        recordedAt: date,
+      },
+    });
+  }
+
+  // Journal entries para mt1_2 (40 días) - sincronizadas con métricas
+  const moods = ['positivo', 'neutral', 'negativo'];
+  const topics = [
+    'App Router', 'Server Components', 'Client Components', 'Data Fetching',
+    'Route Handlers', 'Middleware', 'Layouts', 'Templates', 'Loading States',
+    'Error Boundaries', 'Streaming', 'Suspense', 'Metadata API', 'Image Optimization'
+  ];
+  
+  totalHours = 0;
+  for (let i = 0; i < 40; i++) {
+    const date = new Date(baseDate1_2);
+    date.setDate(date.getDate() + i);
+    date.setHours(0, 0, 0, 0);
+    
+    // Mismo cálculo de horas que en métricas para sincronización
+    const progressFactor = i / 40;
+    const baseHours = 1.0 + progressFactor * 2.0;
+    const hours = baseHours + (Math.random() - 0.5) * 0.8;
+    const clampedHours = Math.max(0.5, Math.min(4.5, hours));
+    totalHours += clampedHours;
+    
+    const topicIndex = Math.floor(Math.random() * topics.length);
+    const currentTopic = topics[topicIndex];
+    const exercisesCompleted = Math.floor(clampedHours * 3);
+    const modulesAdvanced = i % 7 === 0 ? 1 : 0;
+    
+    const notes = i % 2 === 0 ? [
+      `Estudié ${clampedHours.toFixed(1)} horas hoy. Trabajé en ${currentTopic}.`,
+      `Avancé con ${currentTopic}. Completé ${exercisesCompleted} ejercicios.`,
+      `Día productivo. ${clampedHours.toFixed(1)} horas de estudio enfocado en ${currentTopic}.`,
+      `Completé el módulo de ${currentTopic}. ${exercisesCompleted} ejercicios resueltos.`,
+    ][Math.floor(Math.random() * 4)] : null;
+    
+    const obstacles = i % 5 === 0 ? [
+      'Algunas dificultades con Server Components',
+      'Confusión con la diferencia entre Server y Client Components',
+      'Problemas con el routing dinámico',
+      null
+    ][Math.floor(Math.random() * 4)] : null;
+    
+    const journalEntry = await prisma.miniTaskJournalEntry.create({
+      data: {
+        miniTaskId: mt1_2.id,
+        entryDate: date,
+        progressValue: clampedHours,
+        progressUnit: 'horas',
+        timeSpent: Math.round(clampedHours * 60),
+        notes: notes,
+        obstacles: obstacles,
+        mood: moods[i % 3],
+        checklistCompleted: i % 4 !== 0, // Completado la mayoría de días
+        metricsData: JSON.stringify({ 
+          horasEstudiadas: clampedHours,
+          ejerciciosCompletados: exercisesCompleted,
+          modulosAvanzados: modulesAdvanced,
+          temaPrincipal: currentTopic,
+          totalAcumulado: totalHours.toFixed(1)
+        }),
+      },
+    });
+    
+    // Crear métrica desde journal entry (simulando pluginEventService)
+    // Solo si no existe ya una métrica para ese día
+    const existingMetric = await prisma.miniTaskMetric.findFirst({
+      where: {
+        miniTaskId: mt1_2.id,
+        pluginId: 'progress-tracker',
+        recordedAt: {
+          gte: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
+          lt: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1),
+        },
+      },
+    });
+    
+    if (!existingMetric) {
+      await prisma.miniTaskMetric.create({
+        data: {
+          miniTaskId: mt1_2.id,
+          pluginId: 'progress-tracker',
+          metricType: 'progress',
+          value: JSON.stringify(clampedHours),
+          metadata: JSON.stringify({
+            unit: 'horas',
+            entryDate: date.toISOString(),
+            journalEntryId: journalEntry.id,
+            eventType: 'created',
+          }),
+          recordedAt: new Date(date.getFullYear(), date.getMonth(), date.getDate(), 9, 0, 0),
+        },
+      });
+    }
+  }
+  console.log('  ✅ mt1_2: 5 plugins, 40 métricas, 40 entradas journal');
+
   const mt1_3 = await prisma.miniTask.create({
     data: {
       goalId: goal1.id,
@@ -228,6 +497,24 @@ async function main() {
       description: 'Presentar y aprobar el examen final con más del 85%',
       status: 'COMPLETED',
       deadline: new Date('2024-11-10'),
+      unlocked: true,
+      order: 2, // Tercera minitask (depende de mt1_2)
+      priority: 'high',
+      dependsOn: mt1_2.id, // Depende de completar Next.js primero
+      schedulingType: 'sequential',
+      scheduledDate: new Date('2024-11-10'),
+      scheduledTime: '10:00',
+      metricsConfig: JSON.stringify({
+        unlocked: true,
+        unlockedAt: new Date('2024-10-01').toISOString(),
+        plugins: [
+          { id: 'calendar', config: { enabled: true, frequency: 'daily', alarmTimes: ['09:00', '15:00'], checklistEnabled: true, checklistLabel: 'Sesión de estudio para examen' } },
+          { id: 'chart', config: { enabled: true, chartType: 'bar', metricType: 'sesiones-estudio', timeRange: 'week' } },
+          { id: 'progress-tracker', config: { enabled: true, targetValue: 60, unit: 'horas' } },
+          { id: 'reminder', config: { enabled: true, reminderTimes: ['09:00', '15:00'] } },
+          { id: 'notification', config: { enabled: true, frequency: 'daily' } },
+        ],
+      }),
       createdAt: new Date('2024-10-01'),
       updatedAt: new Date('2024-11-08'),
     },
@@ -245,6 +532,179 @@ async function main() {
       passed: true,
     },
   });
+
+  // Plugins para mt1_3
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt1_3.id,
+      pluginId: 'calendar',
+      config: JSON.stringify({ enabled: true, frequency: 'daily', alarmTimes: ['09:00', '15:00'], checklistEnabled: true, checklistLabel: 'Sesión de estudio para examen' }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt1_3.id,
+      pluginId: 'chart',
+      config: JSON.stringify({ enabled: true, chartType: 'bar', metricType: 'sesiones-estudio', timeRange: 'week' }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt1_3.id,
+      pluginId: 'progress-tracker',
+      config: JSON.stringify({ enabled: true, targetValue: 60, unit: 'horas' }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt1_3.id,
+      pluginId: 'reminder',
+      config: JSON.stringify({ enabled: true, reminderTimes: ['09:00', '15:00'] }),
+      enabled: true,
+    },
+  });
+  await prisma.miniTaskPlugin.create({
+    data: {
+      miniTaskId: mt1_3.id,
+      pluginId: 'notification',
+      config: JSON.stringify({ enabled: true, frequency: 'daily' }),
+      enabled: true,
+    },
+  });
+
+  // Métricas históricas para mt1_3 (38 días - 2024-10-01 a 2024-11-08)
+  const baseDate1_3 = new Date('2024-10-01');
+  let totalHours1_3 = 0;
+  
+  for (let i = 0; i < 38; i++) {
+    const date = new Date(baseDate1_3);
+    date.setDate(date.getDate() + i);
+    date.setHours(9 + Math.floor(Math.random() * 6), 0, 0, 0); // Entre 09:00 y 15:00
+    
+    // Progresión intensiva: 1.5-2 horas al inicio, aumentar a 3-4 horas cerca del examen
+    const progressFactor = i / 38; // 0 a 1
+    const baseHours = 1.5 + progressFactor * 2.0; // 1.5 a 3.5
+    const hours = baseHours + (Math.random() - 0.5) * 0.6; // Variación ±0.3
+    const clampedHours = Math.max(1.0, Math.min(4.5, hours));
+    totalHours1_3 += clampedHours;
+    
+    await prisma.miniTaskMetric.create({
+      data: {
+        miniTaskId: mt1_3.id,
+        pluginId: 'progress-tracker',
+        metricType: 'progress',
+        value: JSON.stringify(clampedHours),
+        metadata: JSON.stringify({ 
+          unit: 'horas', 
+          entryDate: new Date(date.getFullYear(), date.getMonth(), date.getDate()).toISOString(),
+          totalAcumulado: totalHours1_3.toFixed(1),
+          tipoSesion: i % 3 === 0 ? 'practica-examen' : 'estudio-temas'
+        }),
+        recordedAt: date,
+      },
+    });
+  }
+
+  // Journal entries para mt1_3 (38 días) - sincronizadas con métricas
+  const moods1_3 = ['positivo', 'neutral', 'negativo'];
+  const examTopics = [
+    'React Fundamentals', 'Next.js App Router', 'Server Components', 'Data Fetching',
+    'Routing', 'Middleware', 'API Routes', 'Authentication', 'Performance',
+    'SEO', 'Deployment', 'Testing', 'TypeScript', 'Best Practices'
+  ];
+  
+  totalHours1_3 = 0;
+  for (let i = 0; i < 38; i++) {
+    const date = new Date(baseDate1_3);
+    date.setDate(date.getDate() + i);
+    date.setHours(0, 0, 0, 0);
+    
+    // Mismo cálculo de horas que en métricas para sincronización
+    const progressFactor = i / 38;
+    const baseHours = 1.5 + progressFactor * 2.0;
+    const hours = baseHours + (Math.random() - 0.5) * 0.6;
+    const clampedHours = Math.max(1.0, Math.min(4.5, hours));
+    totalHours1_3 += clampedHours;
+    
+    const topicIndex = Math.floor(Math.random() * examTopics.length);
+    const currentTopic = examTopics[topicIndex];
+    const practiceScore = i > 20 ? 75 + Math.floor(Math.random() * 20) : null; // Puntajes de práctica solo en la segunda mitad
+    const topicsReviewed = Math.floor(clampedHours / 1.5);
+    
+    // Mood más positivo cerca del examen
+    const moodIndex = i < 10 ? i % 3 : (i < 30 ? (i % 3 === 0 ? 0 : (i % 3 === 1 ? 0 : 1)) : 0); // Más positivo al final
+    const mood = moods1_3[moodIndex];
+    
+    const notes = i % 2 === 0 ? [
+      `Estudié ${clampedHours.toFixed(1)} horas hoy. Revisé ${currentTopic}.`,
+      `Sesión intensiva de ${clampedHours.toFixed(1)} horas. Enfocado en ${currentTopic}.`,
+      `Practiqué ${currentTopic}. ${clampedHours.toFixed(1)} horas de estudio concentrado.`,
+      i > 20 && practiceScore ? `Examen de práctica: ${practiceScore}%. Revisé ${currentTopic}.` : `Día productivo. ${clampedHours.toFixed(1)} horas estudiando ${currentTopic}.`,
+    ][Math.floor(Math.random() * 4)] : null;
+    
+    const obstacles = i % 6 === 0 ? [
+      'Algo de ansiedad sobre el examen',
+      'Dificultad con algunos conceptos avanzados',
+      'Fatiga mental por el estudio intensivo',
+      null
+    ][Math.floor(Math.random() * 4)] : null;
+    
+    const journalEntry = await prisma.miniTaskJournalEntry.create({
+      data: {
+        miniTaskId: mt1_3.id,
+        entryDate: date,
+        progressValue: clampedHours,
+        progressUnit: 'horas',
+        timeSpent: Math.round(clampedHours * 60),
+        notes: notes,
+        obstacles: obstacles,
+        mood: mood,
+        checklistCompleted: i % 5 !== 0, // Completado la mayoría de días (más consistente cerca del examen)
+        metricsData: JSON.stringify({ 
+          horasEstudiadas: clampedHours,
+          temasRevisados: topicsReviewed,
+          temaPrincipal: currentTopic,
+          puntajePractica: practiceScore,
+          totalAcumulado: totalHours1_3.toFixed(1),
+          diasRestantes: 38 - i
+        }),
+      },
+    });
+    
+    // Crear métrica desde journal entry (simulando pluginEventService)
+    const existingMetric = await prisma.miniTaskMetric.findFirst({
+      where: {
+        miniTaskId: mt1_3.id,
+        pluginId: 'progress-tracker',
+        recordedAt: {
+          gte: new Date(date.getFullYear(), date.getMonth(), date.getDate()),
+          lt: new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1),
+        },
+      },
+    });
+    
+    if (!existingMetric) {
+      await prisma.miniTaskMetric.create({
+        data: {
+          miniTaskId: mt1_3.id,
+          pluginId: 'progress-tracker',
+          metricType: 'progress',
+          value: JSON.stringify(clampedHours),
+          metadata: JSON.stringify({
+            unit: 'horas',
+            entryDate: date.toISOString(),
+            journalEntryId: journalEntry.id,
+            eventType: 'created',
+          }),
+          recordedAt: new Date(date.getFullYear(), date.getMonth(), date.getDate(), 10, 0, 0),
+        },
+      });
+    }
+  }
+  console.log('  ✅ mt1_3: 5 plugins, 38 métricas, 38 entradas journal');
 
 
   console.log('✅ Goal 1 (COMPLETADA) creada con 3 minitasks completadas y 3 checkins');
@@ -288,6 +748,9 @@ async function main() {
       description: 'Completar la introducción y el primer capítulo del libro',
       status: 'COMPLETED',
       deadline: new Date('2024-10-15'),
+      order: 0,
+      priority: 'high',
+      schedulingType: 'parallel',
       createdAt: new Date('2024-09-05'),
       updatedAt: new Date('2024-10-12'),
     },
@@ -313,6 +776,10 @@ async function main() {
       description: 'Revisar libros, artículos y estudios sobre productividad',
       status: 'COMPLETED',
       deadline: new Date('2024-09-30'),
+      order: 1,
+      priority: 'high',
+      dependsOn: null, // Puede hacerse en paralelo con mt2_1
+      schedulingType: 'parallel',
       createdAt: new Date('2024-09-10'),
       updatedAt: new Date('2024-09-28'),
     },
@@ -339,6 +806,10 @@ async function main() {
       status: 'PENDING',
       deadline: new Date('2024-12-15'),
       unlocked: true,
+      order: 2,
+      priority: 'high',
+      dependsOn: mt2_1.id, // Depende de completar el primer capítulo
+      schedulingType: 'daily', // Tarea diaria de escritura
       metricsConfig: JSON.stringify({
         unlocked: true,
         unlockedAt: new Date('2024-10-20').toISOString(),
@@ -452,6 +923,10 @@ async function main() {
       description: 'Desarrollar el capítulo sobre organización personal',
       status: 'PENDING',
       deadline: new Date('2025-01-31'),
+      order: 3,
+      priority: 'medium',
+      dependsOn: mt2_3.id, // Depende de completar el segundo capítulo
+      schedulingType: 'daily',
       createdAt: new Date('2024-11-01'),
     },
   });
@@ -463,6 +938,10 @@ async function main() {
       description: 'Hacer revisión completa de ortografía, gramática y coherencia',
       status: 'DRAFT',
       deadline: new Date('2025-02-28'),
+      order: 4,
+      priority: 'medium',
+      dependsOn: mt2_4.id, // Depende de completar el tercer capítulo
+      schedulingType: 'sequential',
       createdAt: new Date('2024-11-15'),
     },
   });
@@ -513,6 +992,11 @@ async function main() {
       status: 'IN_PROGRESS',
       deadline: new Date('2024-07-15'),
       unlocked: true,
+      order: 5, // Después de las otras minitasks
+      priority: 'medium',
+      schedulingType: 'scheduled',
+      scheduledDate: new Date('2024-07-15'),
+      scheduledTime: '09:00',
       metricsConfig: JSON.stringify({
         unlocked: true,
         unlockedAt: new Date('2024-07-01').toISOString(),
@@ -611,6 +1095,9 @@ async function main() {
       description: 'Alcanzar la capacidad de correr 5 km continuos',
       status: 'COMPLETED',
       deadline: new Date('2024-09-15'),
+      order: 0,
+      priority: 'high',
+      schedulingType: 'parallel',
       createdAt: new Date('2024-08-05'),
       updatedAt: new Date('2024-09-10'),
     },
@@ -636,6 +1123,10 @@ async function main() {
       description: 'Aumentar la distancia a 10 km continuos',
       status: 'COMPLETED',
       deadline: new Date('2024-10-15'),
+      order: 1,
+      priority: 'high',
+      dependsOn: mt3_1.id, // Depende de completar 5km primero
+      schedulingType: 'sequential',
       createdAt: new Date('2024-09-20'),
       updatedAt: new Date('2024-10-10'),
     },
@@ -662,6 +1153,10 @@ async function main() {
       status: 'PENDING',
       deadline: new Date('2025-01-31'),
       unlocked: true,
+      order: 2,
+      priority: 'high',
+      dependsOn: mt3_2.id, // Depende de completar 10km primero
+      schedulingType: 'daily', // Entrenamiento diario
       metricsConfig: JSON.stringify({
         unlocked: true,
         unlockedAt: new Date('2024-10-20').toISOString(),
@@ -784,6 +1279,10 @@ async function main() {
       description: 'Completar todas las sesiones del plan de entrenamiento',
       status: 'PENDING',
       deadline: new Date('2025-03-31'),
+      order: 3,
+      priority: 'high',
+      dependsOn: mt3_3.id, // Depende de completar media maratón
+      schedulingType: 'daily',
       createdAt: new Date('2024-11-01'),
     },
   });
@@ -806,35 +1305,48 @@ async function main() {
   });
 
   // Minitasks en draft para goal4
-  await prisma.miniTask.create({
+  const mt4_1 = await prisma.miniTask.create({
     data: {
       goalId: goal4.id,
       title: 'Completar curso de inglés nivel A2',
       description: 'Terminar el curso básico de inglés',
       status: 'DRAFT',
       deadline: new Date('2025-02-28'),
+      order: 0,
+      priority: 'high',
+      schedulingType: 'parallel',
       createdAt: new Date('2024-11-05'),
     },
   });
 
-  await prisma.miniTask.create({
+  const mt4_2 = await prisma.miniTask.create({
     data: {
       goalId: goal4.id,
       title: 'Completar curso de inglés nivel B1',
       description: 'Avanzar al nivel intermedio',
       status: 'DRAFT',
       deadline: new Date('2025-05-31'),
+      order: 1,
+      priority: 'high',
+      dependsOn: mt4_1.id, // Depende de completar A2
+      schedulingType: 'sequential',
       createdAt: new Date('2024-11-05'),
     },
   });
 
-  await prisma.miniTask.create({
+  const mt4_3 = await prisma.miniTask.create({
     data: {
       goalId: goal4.id,
       title: 'Aprobar examen B2 oficial',
       description: 'Presentar y aprobar el examen de certificación B2',
       status: 'DRAFT',
       deadline: new Date('2025-08-15'),
+      order: 2,
+      priority: 'high',
+      dependsOn: mt4_2.id, // Depende de completar B1
+      schedulingType: 'scheduled',
+      scheduledDate: new Date('2025-08-15'),
+      scheduledTime: '09:00',
       createdAt: new Date('2024-11-05'),
     },
   });
@@ -862,6 +1374,9 @@ async function main() {
       description: 'Crear el índice y plan de lecciones',
       status: 'DRAFT',
       deadline: new Date('2025-01-15'),
+      order: 0,
+      priority: 'high',
+      schedulingType: 'parallel',
       createdAt: new Date('2024-11-12'),
     },
   });
@@ -910,6 +1425,11 @@ async function main() {
       unlocked: true,
       plannedHours: 2.0,
       isSingleDayTask: true,
+      order: 0,
+      priority: 'high',
+      schedulingType: 'scheduled',
+      scheduledDate: new Date(),
+      scheduledTime: '09:00',
       metricsConfig: JSON.stringify({
         unlocked: true,
         unlockedAt: new Date().toISOString(),
@@ -1018,6 +1538,11 @@ async function main() {
       unlocked: true,
       plannedHours: 3.0,
       isSingleDayTask: true,
+      order: 0,
+      priority: 'high',
+      schedulingType: 'scheduled',
+      scheduledDate: new Date(),
+      scheduledTime: '10:00',
       metricsConfig: JSON.stringify({
         unlocked: true,
         unlockedAt: new Date().toISOString(),
@@ -1133,6 +1658,10 @@ async function main() {
       status: 'IN_PROGRESS',
       deadline: new Date(new Date().setDate(new Date().getDate() + 3)),
       unlocked: true,
+      order: 0,
+      priority: 'high',
+      schedulingType: 'daily', // Tarea diaria con Pomodoro
+      scheduledTime: '09:00',
       metricsConfig: JSON.stringify({
         unlocked: true,
         unlockedAt: new Date().toISOString(),

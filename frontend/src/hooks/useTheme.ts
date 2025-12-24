@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 
-export type Theme = 'light' | 'dark' | 'cyberpunk';
+export type Theme = 'light' | 'dark' | 'cyberpunk' | 'banana-cream';
 
 export function useTheme() {
   const [theme, setTheme] = useState<Theme>('light');
@@ -21,7 +21,7 @@ export function useTheme() {
     const root = document.documentElement;
     
     // Remover todas las clases de tema
-    root.classList.remove('light', 'dark', 'cyberpunk');
+    root.classList.remove('light', 'dark', 'cyberpunk', 'banana-cream');
     
     // Aplicar nueva clase de tema
     root.classList.add(newTheme);

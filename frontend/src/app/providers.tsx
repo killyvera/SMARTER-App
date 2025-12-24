@@ -26,7 +26,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') || 'light';
     const root = document.documentElement;
-    root.classList.remove('light', 'dark', 'cyberpunk');
+    root.classList.remove('light', 'dark', 'cyberpunk', 'banana-cream');
     root.classList.add(savedTheme);
   }, []);
 

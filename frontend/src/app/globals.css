@@ -83,6 +83,41 @@
     --ring: 180 100% 60%;
   }
 
+  .banana-cream {
+    /* Fondo crema cálido */
+    --background: 45 100% 95%;
+    --foreground: 30 20% 20%;
+    --card: 45 100% 97%;
+    --card-foreground: 30 20% 20%;
+    --popover: 45 100% 97%;
+    --popover-foreground: 30 20% 20%;
+    
+    /* Primary: Dorado cálido */
+    --primary: 45 100% 50%;
+    --primary-foreground: 30 20% 20%;
+    
+    /* Secondary: Crema más oscuro */
+    --secondary: 45 80% 85%;
+    --secondary-foreground: 30 20% 20%;
+    
+    /* Muted: Crema suave */
+    --muted: 45 60% 90%;
+    --muted-foreground: 30 30% 40%;
+    
+    /* Accent: Amarillo crema brillante */
+    --accent: 50 100% 60%;
+    --accent-foreground: 30 20% 20%;
+    
+    /* Destructive: Rojo suave cálido */
+    --destructive: 10 80% 55%;
+    --destructive-foreground: 45 100% 97%;
+    
+    /* Borders: Dorado suave con opacidad */
+    --border: 45 60% 70%;
+    --input: 45 60% 70%;
+    --ring: 45 100% 50%;
+  }
+
   /* Efectos adicionales para tema cyberpunk */
   .cyberpunk * {
     text-shadow: 0 0 10px hsl(var(--primary) / 0.3);
@@ -609,6 +644,167 @@ h3.sticky-note-title,
     -moz-user-select: text;
     -ms-user-select: text;
   }
+}
+
+/* Estilos kawaii para tema banana-cream */
+.banana-cream {
+  /* Bordes muy redondeados */
+  --radius: 1rem;
+}
+
+.banana-cream * {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Cards con bordes redondeados y sombras suaves */
+.banana-cream [class*="card"],
+.banana-cream [class*="Card"],
+.banana-cream .bg-card {
+  border-radius: 1rem !important;
+  box-shadow: 
+    0 2px 8px rgba(255, 215, 0, 0.1),
+    0 4px 16px rgba(255, 215, 0, 0.05),
+    0 0 0 1px rgba(255, 215, 0, 0.1) !important;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.banana-cream [class*="card"]:hover,
+.banana-cream [class*="Card"]:hover,
+.banana-cream .bg-card:hover {
+  transform: scale(1.02) translateY(-2px) !important;
+  box-shadow: 
+    0 4px 12px rgba(255, 215, 0, 0.15),
+    0 8px 24px rgba(255, 215, 0, 0.08),
+    0 0 0 1px rgba(255, 215, 0, 0.2) !important;
+}
+
+/* Botones con bordes redondeados y animación bounce suave */
+.banana-cream button,
+.banana-cream [role="button"] {
+  border-radius: 0.75rem !important;
+  box-shadow: 
+    0 2px 6px rgba(255, 215, 0, 0.15),
+    0 0 0 1px rgba(255, 215, 0, 0.1) !important;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.banana-cream button:hover,
+.banana-cream [role="button"]:hover {
+  transform: scale(1.05) !important;
+  box-shadow: 
+    0 4px 12px rgba(255, 215, 0, 0.25),
+    0 0 0 2px rgba(255, 215, 0, 0.2) !important;
+}
+
+.banana-cream button:active,
+.banana-cream [role="button"]:active {
+  transform: scale(0.98) !important;
+}
+
+/* Efecto de brillo suave en elementos primary */
+.banana-cream [class*="bg-primary"],
+.banana-cream [class*="text-primary"],
+.banana-cream button[class*="bg-primary"] {
+  position: relative;
+}
+
+.banana-cream [class*="bg-primary"]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.3) 0%,
+    rgba(255, 255, 255, 0) 50%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Tipografía más suave y redondeada */
+.banana-cream body,
+.banana-cream * {
+  letter-spacing: 0.01em;
+}
+
+.banana-cream h1,
+.banana-cream h2,
+.banana-cream h3,
+.banana-cream h4,
+.banana-cream h5,
+.banana-cream h6 {
+  font-weight: 500 !important;
+  letter-spacing: 0.02em !important;
+  text-shadow: 0 1px 2px rgba(255, 215, 0, 0.1) !important;
+}
+
+/* Inputs y campos de formulario con estilo kawaii */
+.banana-cream input,
+.banana-cream textarea,
+.banana-cream select {
+  border-radius: 0.75rem !important;
+  box-shadow: 
+    0 2px 4px rgba(255, 215, 0, 0.08),
+    inset 0 1px 2px rgba(255, 255, 255, 0.5) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.banana-cream input:focus,
+.banana-cream textarea:focus,
+.banana-cream select:focus {
+  box-shadow: 
+    0 0 0 3px rgba(255, 215, 0, 0.2),
+    0 4px 8px rgba(255, 215, 0, 0.15),
+    inset 0 1px 2px rgba(255, 255, 255, 0.6) !important;
+  transform: scale(1.01) !important;
+}
+
+/* Badges y etiquetas con estilo kawaii */
+.banana-cream [class*="badge"],
+.banana-cream [class*="Badge"] {
+  border-radius: 9999px !important;
+  box-shadow: 0 2px 4px rgba(255, 215, 0, 0.15) !important;
+  padding: 0.25rem 0.75rem !important;
+}
+
+/* Animación bounce suave para elementos interactivos */
+@keyframes kawaii-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.banana-cream button:hover,
+.banana-cream [role="button"]:hover,
+.banana-cream [class*="card"]:hover {
+  animation: kawaii-bounce 0.6s ease-in-out;
+}
+
+/* Sombras suaves en todos los elementos elevados */
+.banana-cream [class*="shadow"] {
+  box-shadow: 
+    0 2px 8px rgba(255, 215, 0, 0.1),
+    0 4px 16px rgba(255, 215, 0, 0.05) !important;
+}
+
+.banana-cream [class*="shadow-lg"] {
+  box-shadow: 
+    0 4px 12px rgba(255, 215, 0, 0.15),
+    0 8px 24px rgba(255, 215, 0, 0.08) !important;
+}
+
+/* Efecto de brillo en bordes */
+.banana-cream [class*="border"] {
+  border-color: hsl(var(--border)) !important;
+  box-shadow: 0 0 0 1px rgba(255, 215, 0, 0.1) !important;
 }
 
 

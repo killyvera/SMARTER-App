@@ -79,6 +79,12 @@ model MiniTask {
   color        String?  // Color hexadecimal (heredado del goal o personalizado)
   positionX    Float?   // Posición X en el muro de notas (píxeles)
   positionY    Float?   // Posición Y en el muro de notas (píxeles)
+  order        Int      @default(0) // Orden dentro del goal (0, 1, 2...)
+  priority     String   @default("medium") // Prioridad: 'high', 'medium', 'low'
+  dependsOn    String?  // ID de otra minitask que debe completarse primero (nullable)
+  schedulingType String @default("sequential") // Tipo de scheduling: 'sequential', 'parallel', 'daily', 'scheduled'
+  scheduledDate DateTime? // Fecha específica si es scheduled
+  scheduledTime String?  // Hora específica HH:mm si es scheduled
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -92,6 +98,9 @@ model MiniTask {
   @@index([goalId])
   @@index([status])
   @@index([unlocked])
+  @@index([goalId, order])
+  @@index([dependsOn])
+  @@index([schedulingType])
 }
 
 model MiniTaskScore {

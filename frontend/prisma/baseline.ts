@@ -1,6 +1,8 @@
 /**
  * Script simple para hacer baseline de migraciones existentes
- * Ejecuta: npx dotenv-cli -e .env.local -- tsx prisma/baseline.ts
+ * 
+ * Uso local: npx dotenv-cli -e .env.local -- tsx prisma/baseline.ts
+ * Uso en Netlify: npx tsx prisma/baseline.ts (las variables de entorno ya están disponibles)
  */
 
 import { PrismaClient } from '@prisma/client';

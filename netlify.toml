@@ -1,5 +1,5 @@
 [build]
-  command = "cd frontend && npm install && npx prisma migrate deploy && npx prisma generate && npm run build"
+  command = "cd frontend && node scripts/netlify-build.js"
   publish = "frontend/.next"
 
 [build.environment]

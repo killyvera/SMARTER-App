@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { validateGoalService } from '@/services/goalService';
 import { getUserId } from '@/lib/auth/getUserId';
 import { logApiRequest, logApiError } from '@/lib/api-logger';
+import { getClientIP } from '@/lib/getClientIP';
 
 export async function POST(
   request: NextRequest,
@@ -11,6 +12,7 @@ export async function POST(
   
   try {
     const userId = await getUserId(request);
+    const ip = getClientIP(request);
     const body = await request.json().catch(() => ({}));
     
     // Si viene con acceptedTitle, acceptedDescription o acceptedMiniTasks, es confirmación final
@@ -20,6 +22,7 @@ export async function POST(
     console.log('Validación de goal:', {
       goalId: params.id,
       userId,
+      ip,
       isConfirmation,
       hasAcceptedTitle: !!body.acceptedTitle,
       hasAcceptedDescription: !!body.acceptedDescription,
@@ -32,7 +35,9 @@ export async function POST(
       acceptedTitle: body.acceptedTitle,
       acceptedDescription: body.acceptedDescription,
       acceptedMiniTasks: body.acceptedMiniTasks,
-    } : undefined;
+      userId,
+      ip,
+    } : { userId, ip };
     
     console.log('Opciones pasadas al servicio:', {
       hasOptions: !!options,

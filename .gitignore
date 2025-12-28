@@ -2,6 +2,7 @@
 node_modules/
 .pnp
 .pnp.js
+package-lock.json
 
 # Testing
 coverage/
@@ -55,3 +56,14 @@ Thumbs.db
 # Logs
 logs/
 *.log
+
+# Scripts temporales y herramientas de desarrollo
+*.ps1
+*-connection.ts
+**/migrate-to-supabase.ts
+**/export-*.ps1
+**/get-all-env-variables.ps1
+**/*-NETLIFY.txt
+**/VARIABLES-*.txt
+**/test-supabase-connection.ts
+**/check-supabase-connection.ts

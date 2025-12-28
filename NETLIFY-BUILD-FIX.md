@@ -33,7 +33,7 @@ JWT_SECRET=tu_jwt_secret_minimo_32_caracteres
 NODE_ENV=production
 AI_PROVIDER=openai
 OPENAI_API_KEY=tu_key
-OPENAI_MODEL=gpt-4
+OPENAI_MODEL=tu-modelo-aqui
 ```
 
 ## Nota sobre dotenv-cli

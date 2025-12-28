@@ -34,7 +34,7 @@ DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co
 JWT_SECRET="tu_jwt_secret_aqui_minimo_32_caracteres"
 AI_PROVIDER="openai"
 OPENAI_API_KEY="tu-api-key"
-OPENAI_MODEL="gpt-4"
+OPENAI_MODEL="tu-modelo-aqui"
 ```
 
 #### Netlify

@@ -29,7 +29,7 @@ Aplicación móvil-first PWA para gestión personal de objetivos usando el méto
    - `JWT_SECRET`: Clave secreta para JWT (mínimo 32 caracteres). Genera uno con: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
    - `AI_PROVIDER`: `openai` o `azure`
    - `OPENAI_API_KEY`: Tu API key de OpenAI (si usas OpenAI)
-   - `OPENAI_MODEL`: Modelo a usar (por defecto: `gpt-4`)
+   - `OPENAI_MODEL`: Modelo a usar (por defecto: gpt-4)
 
 3. **Configurar base de datos:**
    ```bash

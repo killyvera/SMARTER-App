@@ -39,7 +39,7 @@ JWT_SECRET=tu_jwt_secret_aqui_minimo_32_caracteres
 **Para OpenAI:**
 ```
 OPENAI_API_KEY=sk-proj-...
-OPENAI_MODEL=gpt-4
+OPENAI_MODEL=tu-modelo-aqui
 AI_PROVIDER=openai
 ```
 

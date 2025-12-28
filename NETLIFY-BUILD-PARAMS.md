@@ -115,7 +115,7 @@ JWT_SECRET=tu_jwt_secret_minimo_32_caracteres
 ### Opcionales (para IA):
 ```
 OPENAI_API_KEY=tu_key
-OPENAI_MODEL=gpt-4
+OPENAI_MODEL=tu-modelo-aqui
 AI_PROVIDER=openai
 ```
 

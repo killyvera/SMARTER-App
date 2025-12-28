@@ -39,7 +39,7 @@ DATABASE_URL="postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co
 JWT_SECRET="tu_jwt_secret_aqui_minimo_32_caracteres"
 AI_PROVIDER="openai"
 OPENAI_API_KEY="tu-api-key-de-openai"
-OPENAI_MODEL="gpt-4"
+OPENAI_MODEL="tu-modelo-aqui"
 ```
 
 **Nota:** El parámetro `pgbouncer=true` es recomendado para Supabase en producción.
@@ -54,7 +54,7 @@ OPENAI_MODEL="gpt-4"
    JWT_SECRET=tu_jwt_secret_aqui_minimo_32_caracteres
    AI_PROVIDER=openai
    OPENAI_API_KEY=tu-api-key-de-openai
-   OPENAI_MODEL=gpt-4
+   OPENAI_MODEL=tu-modelo-aqui
    ```
 
 ### 4. Ejecutar Migraciones

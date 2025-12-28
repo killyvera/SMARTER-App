@@ -78,7 +78,7 @@ Basándote en `frontend/src/config/env.ts`, estas son TODAS las variables:
 3. `NODE_ENV` - development | production | test
 4. `AI_PROVIDER` - openai | azure
 5. `OPENAI_API_KEY` - Tu API key de OpenAI
-6. `OPENAI_MODEL` - gpt-4 (default)
+6. `OPENAI_MODEL` - tu-modelo-aqui (default: gpt-4)
 7. `AZURE_OPENAI_ENDPOINT` - Si usas Azure
 8. `AZURE_OPENAI_API_KEY` - Si usas Azure
 9. `AZURE_OPENAI_DEPLOYMENT_NAME` - Si usas Azure
@@ -175,7 +175,7 @@ Copia estas variables desde tu `.env.local` a Netlify:
 - [ ] `NODE_ENV=production`
 - [ ] `AI_PROVIDER` (si no es "openai")
 - [ ] `OPENAI_API_KEY` (si usas OpenAI)
-- [ ] `OPENAI_MODEL` (si no es "gpt-4")
+- [ ] `OPENAI_MODEL` (si no es el default)
 - [ ] Variables de Azure (si usas Azure OpenAI)
 - [ ] Variables de protección Agent Core (opcional, tienen defaults)
 

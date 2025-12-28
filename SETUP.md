@@ -35,7 +35,7 @@ DATABASE_URL="file:./prisma/dev.db"
 JWT_SECRET="GENERA_UN_SECRETO_SEGURO_AQUI"
 AI_PROVIDER="openai"
 OPENAI_API_KEY="tu-api-key-de-openai-aqui"
-OPENAI_MODEL="gpt-4"
+OPENAI_MODEL="tu-modelo-aqui"
 ```
 
 **Generar JWT_SECRET seguro:**

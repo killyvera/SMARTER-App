@@ -1,10 +1,11 @@
 [build]
-  command = "cd frontend && npm install && npm run build"
+  command = "cd frontend && npm ci --legacy-peer-deps --prefer-offline --no-audit --no-fund && npm run build"
   publish = "frontend/.next"
 
 [build.environment]
   NODE_VERSION = "20"
-  NPM_FLAGS = "--legacy-peer-deps"
+  NPM_FLAGS = "--legacy-peer-deps --prefer-offline --no-audit --no-fund"
+  NPM_CONFIG_PRODUCTION = "false"
 
 # Configuración para Next.js
 [[plugins]]

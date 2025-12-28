@@ -92,10 +92,41 @@ npm run db:test-connection
 - Verifica que la variable esté escrita correctamente
 - Reinicia el servidor de desarrollo
 
-### Error: "Invalid DATABASE_URL"
-- Verifica que la URL de Supabase sea correcta
-- Verifica que la contraseña esté incluida
-- Verifica que `pgbouncer=true&connection_limit=1` esté presente
+### Error: "Invalid DATABASE_URL" o "P1013: The provided database string is invalid"
+
+**Causa común:** La contraseña tiene caracteres especiales que necesitan ser codificados (URL encoding).
+
+**Solución:**
+1. Valida la URL localmente:
+   ```bash
+   cd frontend
+   npm run db:validate-url "tu-url-aqui"
+   ```
+
+2. Si la contraseña tiene caracteres especiales (`@`, `:`, `/`, `?`, `#`, `[`, `]`, `&`, `%`), codifícalos:
+   - `@` → `%40`
+   - `:` → `%3A`
+   - `/` → `%2F`
+   - `?` → `%3F`
+   - `#` → `%23`
+   - `[` → `%5B`
+   - `]` → `%5D`
+   - `&` → `%26`
+   - `%` → `%25`
+
+3. O cambia la contraseña en Supabase a una sin caracteres especiales.
+
+4. Verifica que la URL tenga el formato correcto:
+   ```
+   postgresql://usuario:contraseña@host:puerto/base_de_datos?pgbouncer=true&connection_limit=1
+   ```
+
+5. En Netlify, asegúrate de:
+   - NO usar comillas alrededor del valor
+   - NO tener espacios extra
+   - Usar la URL codificada si la contraseña tiene caracteres especiales
+
+**Ver documentación completa:** Ver [NETLIFY-DATABASE-URL-FIX.md](../NETLIFY-DATABASE-URL-FIX.md)
 
 ### Error en Netlify: "Build failed"
 - Verifica que todas las variables requeridas estén configuradas

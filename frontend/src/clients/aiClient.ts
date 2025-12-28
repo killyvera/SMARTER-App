@@ -66,7 +66,7 @@ function getClient(): OpenAI {
 
 function getModel(): string {
   if (env.AI_PROVIDER === 'azure') {
-    return env.AZURE_OPENAI_DEPLOYMENT_NAME || 'gpt-4';
+    return env.AZURE_OPENAI_DEPLOYMENT_NAME || process.env.OPENAI_MODEL || 'gpt-4';
   }
   return env.OPENAI_MODEL;
 }

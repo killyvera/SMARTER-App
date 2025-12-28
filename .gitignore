@@ -71,6 +71,9 @@ logs/
 **/VARIABLES-*.txt
 **/test-supabase-connection.ts
 **/check-supabase-connection.ts
+**/dev.ps1
+**/start-dev.ps1
+**/setup-netlify.bat
 
 # Documentación con valores de ejemplo (evitar detección de secretos)
 DONDE-LEE-VARIABLES.md

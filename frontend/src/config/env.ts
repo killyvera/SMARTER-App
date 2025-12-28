@@ -6,14 +6,14 @@ const envSchema = z.object({
   DATABASE_URL: z.string(),
   // OpenAI API (default)
   OPENAI_API_KEY: z.string().optional(),
-  OPENAI_MODEL: z.string().default('gpt-4'),
+  OPENAI_MODEL: z.string().default(process.env.OPENAI_MODEL || 'gpt-4'),
   // Azure OpenAI (opcional)
   AZURE_OPENAI_ENDPOINT: z.string().url().optional(),
   AZURE_OPENAI_API_KEY: z.string().optional(),
   AZURE_OPENAI_DEPLOYMENT_NAME: z.string().optional(),
   AZURE_OPENAI_API_VERSION: z.string().default('2024-02-15-preview'),
   // Provider selection
-  AI_PROVIDER: z.enum(['openai', 'azure']).default('openai'),
+  AI_PROVIDER: z.enum(['openai', 'azure']).default((process.env.AI_PROVIDER as 'openai' | 'azure') || 'openai'),
   // Rate Limiting (opcional, con defaults)
   AI_RATE_LIMIT_VALIDATE_GOAL: z.string().default('5'),
   AI_RATE_LIMIT_UNLOCK_MINITASK: z.string().default('3'),

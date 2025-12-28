@@ -7,6 +7,9 @@
   NPM_FLAGS = "--legacy-peer-deps --prefer-offline --no-audit --no-fund"
   NPM_CONFIG_PRODUCTION = "false"
   NETLIFY = "true"
+  # Configurar escáner de secretos para omitir archivos de build y valores de configuración
+  SECRETS_SCAN_OMIT_PATHS = "**/.netlify/** **/.next/** **/node_modules/** **/package-lock.json **/*.ps1 **/*.bat **/scripts/**"
+  SECRETS_SCAN_OMIT_KEYS = "AI_PROVIDER,OPENAI_MODEL"
 
 # Configuración para Next.js
 [[plugins]]

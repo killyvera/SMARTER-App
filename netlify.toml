@@ -1,5 +1,5 @@
 [build]
-  command = "cd frontend && node scripts/netlify-build.js"
+  command = "cd frontend && npm install && npm run build"
   publish = "frontend/.next"
 
 [build.environment]

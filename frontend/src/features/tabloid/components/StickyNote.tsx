@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { darkenColor } from '@/utils/colorUtils';
-import type { MiniTask } from '@prisma/client';
+import type { MiniTask } from '@/types/miniTask';
 
 interface StickyNoteProps {
   miniTask: MiniTask & {

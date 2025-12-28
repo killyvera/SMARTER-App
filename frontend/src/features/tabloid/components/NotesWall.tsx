@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { StickyNote } from './StickyNote';
-import type { MiniTask } from '@prisma/client';
+import type { MiniTask } from '@/types/miniTask';
 
 interface NotesWallProps {
   miniTasks: Array<MiniTask & {

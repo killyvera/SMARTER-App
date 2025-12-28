@@ -3,6 +3,9 @@ import { getUserId } from '@/lib/auth/getUserId';
 import { findBiometricCredentialsByUserId } from '@/repositories/biometricCredentialRepository';
 import { logApiRequest, logApiError } from '@/lib/api-logger';
 
+// Forzar renderizado dinámico (usa headers())
+export const dynamic = 'force-dynamic';
+
 // GET: Listar todas las credenciales del usuario
 export async function GET(request: NextRequest) {
   const startTime = Date.now();

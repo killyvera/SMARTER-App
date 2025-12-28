@@ -5,6 +5,9 @@ import { findMiniTasksByUser } from '@/repositories/miniTaskRepository';
 import { calculateGoalProgress } from '@/features/goals/utils/calculateGoalProgress';
 import { logApiRequest, logApiError } from '@/lib/api-logger';
 
+// Forzar renderizado dinámico (usa headers())
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   const startTime = Date.now();
   

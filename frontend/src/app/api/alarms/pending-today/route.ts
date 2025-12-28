@@ -4,6 +4,9 @@ import { findMiniTasksByUser } from '@/repositories/miniTaskRepository';
 import { findMiniTaskJournalEntryByDate } from '@/repositories/miniTaskJournalRepository';
 import { startOfDay, format, parse } from 'date-fns';
 
+// Forzar renderizado dinámico (usa headers())
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const userId = await getUserId(request);

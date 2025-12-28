@@ -206,11 +206,11 @@ export async function createMiniTask(
       color: color as any,
       status: 'DRAFT',
       order,
-      priority: data.priority,
-      dependsOn: data.dependsOn,
-      schedulingType: data.schedulingType,
-      scheduledDate: data.scheduledDate,
-      scheduledTime: data.scheduledTime,
+      priority: data.priority ?? undefined,
+      dependsOn: data.dependsOn ?? undefined,
+      schedulingType: data.schedulingType ?? undefined,
+      scheduledDate: data.scheduledDate ?? undefined,
+      scheduledTime: data.scheduledTime ?? undefined,
     },
   });
 }

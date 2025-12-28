@@ -312,11 +312,11 @@ export async function unlockMiniTaskService(miniTaskId: string, userId: string) 
     title: miniTask.title,
     description: miniTask.description || undefined,
     deadline: miniTask.deadline ? format(miniTask.deadline, 'yyyy-MM-dd') : undefined,
-    userId,
     goalContext: {
       title: miniTask.goal?.title || '',
       description: miniTask.goal?.description || undefined,
     },
+    ...(userId && { userId } as any), // userId se pasa como propiedad adicional para uso interno
   });
   
   console.log('✅ [UNLOCK] Resultado de IA recibido:', {

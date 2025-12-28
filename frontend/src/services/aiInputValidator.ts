@@ -109,7 +109,7 @@ function calculateInputLength(input: any): number {
   }
   
   if (input && typeof input === 'object') {
-    return Object.values(input).reduce(
+    return Object.values(input).reduce<number>(
       (sum, value) => sum + calculateInputLength(value),
       0
     );

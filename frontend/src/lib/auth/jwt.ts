@@ -5,13 +5,22 @@ function getJwtSecret(): Uint8Array {
   const secret = process.env.JWT_SECRET;
   
   if (!secret) {
-    // En desarrollo, generar un secret por defecto (NO usar en producción)
-    if (process.env.NODE_ENV === 'production') {
+    // En desarrollo o cuando NETLIFY no está configurado, usar secret por defecto
+    // Solo requerir JWT_SECRET en producción real (Netlify)
+    const isProduction = process.env.NODE_ENV === 'production' && process.env.NETLIFY === 'true';
+    
+    if (isProduction) {
       throw new Error('JWT_SECRET debe estar configurado en producción');
     }
+    
     console.warn('⚠️  JWT_SECRET no configurado. Usando secret por defecto (solo para desarrollo)');
-    // Secret por defecto para desarrollo (32 bytes)
-    return new TextEncoder().encode('dev-secret-key-change-in-production-min-32-chars');
+    // Secret por defecto para desarrollo (32 bytes mínimo)
+    return new TextEncoder().encode('dev-secret-key-change-in-production-min-32-chars-long');
+  }
+  
+  // Validar que el secret tenga al menos 32 caracteres
+  if (secret.length < 32) {
+    throw new Error('JWT_SECRET debe tener al menos 32 caracteres');
   }
   
   // Convertir secret a Uint8Array

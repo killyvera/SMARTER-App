@@ -1,11 +1,12 @@
 [build]
-  command = "cd frontend && rm -rf .next/cache .netlify/.next/cache && npm ci --legacy-peer-deps --prefer-offline --no-audit --no-fund && npm run build && rm -rf .netlify/.next/cache/.tsbuildinfo .netlify/.next/cache/webpack"
+  command = "cd frontend && rm -rf .next/cache .netlify/.next/cache && NETLIFY=true npm ci --legacy-peer-deps --prefer-offline --no-audit --no-fund && NETLIFY=true npm run build"
   publish = "frontend/.next"
 
 [build.environment]
   NODE_VERSION = "20"
   NPM_FLAGS = "--legacy-peer-deps --prefer-offline --no-audit --no-fund"
   NPM_CONFIG_PRODUCTION = "false"
+  NETLIFY = "true"
 
 # Configuración para Next.js
 [[plugins]]

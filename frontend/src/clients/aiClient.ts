@@ -71,6 +71,56 @@ function getModel(): string {
   return env.OPENAI_MODEL;
 }
 
+/**
+ * Determina si el modelo soporta response_format: json_object
+ * Los modelos que soportan json_object son generalmente los más recientes:
+ * - gpt-4-turbo, gpt-4-1106-preview, gpt-4o, gpt-4o-mini
+ * - gpt-3.5-turbo-1106 o versiones más recientes
+ * Los modelos más antiguos como gpt-4, gpt-3.5-turbo (sin versión) no lo soportan
+ */
+function supportsJsonObjectFormat(model: string): boolean {
+  const modelLower = model.toLowerCase();
+  
+  // Modelos que soportan json_object
+  const supportedModels = [
+    'gpt-4-turbo',
+    'gpt-4-1106',
+    'gpt-4-0125',
+    'gpt-4o',
+    'gpt-4o-mini',
+    'gpt-3.5-turbo-1106',
+    'gpt-3.5-turbo-0125',
+  ];
+  
+  // Verificar si el modelo está en la lista de soportados
+  for (const supported of supportedModels) {
+    if (modelLower.includes(supported)) {
+      return true;
+    }
+  }
+  
+  // Para Azure OpenAI, generalmente los deployments más recientes lo soportan
+  // Pero es más seguro asumir que no lo soporta a menos que se especifique
+  if (env.AI_PROVIDER === 'azure') {
+    // Si el deployment name contiene indicadores de modelos recientes, asumir soporte
+    return modelLower.includes('turbo') || modelLower.includes('gpt-4o') || modelLower.includes('1106') || modelLower.includes('0125');
+  }
+  
+  // Por defecto, no usar json_object para evitar errores
+  return false;
+}
+
+/**
+ * Obtiene el objeto response_format si el modelo lo soporta
+ * @returns response_format object o undefined
+ */
+function getResponseFormat(model: string): { type: 'json_object' } | undefined {
+  if (supportsJsonObjectFormat(model)) {
+    return { type: 'json_object' };
+  }
+  return undefined;
+}
+
 export interface GoalValidationRequest {
   title: string;
   description?: string;
@@ -370,6 +420,7 @@ ${request.userContext ? `Contexto del usuario: ${request.userContext}` : ''}`;
       userId,
       request,
       async (signal) => {
+        const responseFormat = getResponseFormat(model);
         const response = await client.chat.completions.create({
           model,
           messages: [
@@ -383,7 +434,7 @@ ${request.userContext ? `Contexto del usuario: ${request.userContext}` : ''}`;
             },
           ],
           temperature: 0.3,
-          response_format: { type: 'json_object' },
+          ...(responseFormat && { response_format: responseFormat }),
         }, { signal });
 
         const content = response.choices[0]?.message?.content;
@@ -475,6 +526,7 @@ ${request.goalContext.description ? `Descripción: ${request.goalContext.descrip
     const client = getClient();
     const model = getModel();
 
+    const responseFormat = getResponseFormat(model);
     const response = await client.chat.completions.create({
       model,
       messages: [
@@ -488,7 +540,7 @@ ${request.goalContext.description ? `Descripción: ${request.goalContext.descrip
         },
       ],
       temperature: 0.3,
-      response_format: { type: 'json_object' },
+      ...(responseFormat && { response_format: responseFormat }),
     });
 
     const content = response.choices[0]?.message?.content;
@@ -691,6 +743,7 @@ ${request.goalContext.description ? `Descripción: ${request.goalContext.descrip
       userId,
       request,
       async (signal) => {
+        const responseFormat = getResponseFormat(model);
         const response = await client.chat.completions.create({
           model,
           messages: [
@@ -704,7 +757,7 @@ ${request.goalContext.description ? `Descripción: ${request.goalContext.descrip
             },
           ],
           temperature: 0.4,
-          response_format: { type: 'json_object' },
+          ...(responseFormat && { response_format: responseFormat }),
         }, { signal });
 
         const content = response.choices[0]?.message?.content;
@@ -956,6 +1009,7 @@ export async function queryMiniTaskCoach(
       userId,
       requestInput,
       async (signal) => {
+        const responseFormat = getResponseFormat(model);
         const response = await client.chat.completions.create({
           model,
           messages: [
@@ -969,7 +1023,7 @@ export async function queryMiniTaskCoach(
             },
           ],
           temperature: 0.5,
-          response_format: { type: 'json_object' },
+          ...(responseFormat && { response_format: responseFormat }),
         }, { signal });
 
         const content = response.choices[0]?.message?.content;

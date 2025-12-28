@@ -83,9 +83,19 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const duration = Date.now() - startTime;
     logApiError('GET', '/api/stats', error);
+    
+    // Detectar errores de token inválido
+    const errorMessage = error instanceof Error ? error.message : 'Error al obtener estadísticas';
+    const isTokenError = typeof errorMessage === 'string' && (
+      errorMessage.includes('Token') ||
+      errorMessage.includes('token') ||
+      errorMessage.includes('autenticación') ||
+      errorMessage.includes('authentication')
+    );
+    
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Error al obtener estadísticas' },
-      { status: 500 }
+      { error: errorMessage },
+      { status: isTokenError ? 401 : 500 }
     );
   }
 }

@@ -160,9 +160,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(pendingTasks);
   } catch (error) {
     console.error('Error al obtener tareas pendientes:', error);
+    
+    // Detectar errores de token inválido
+    const errorMessage = error instanceof Error ? error.message : 'Error al obtener tareas pendientes';
+    const isTokenError = typeof errorMessage === 'string' && (
+      errorMessage.includes('Token') ||
+      errorMessage.includes('token') ||
+      errorMessage.includes('autenticación') ||
+      errorMessage.includes('authentication')
+    );
+    
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Error al obtener tareas pendientes' },
-      { status: 500 }
+      { error: errorMessage },
+      { status: isTokenError ? 401 : 500 }
     );
   }
 }

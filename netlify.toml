@@ -1,5 +1,5 @@
 [build]
-  command = "cd frontend && npm ci --legacy-peer-deps --prefer-offline --no-audit --no-fund && npm run build"
+  command = "cd frontend && rm -rf .netlify .next/cache && npm ci --legacy-peer-deps --prefer-offline --no-audit --no-fund && npm run build"
   publish = "frontend/.next"
 
 [build.environment]

@@ -4,6 +4,18 @@ import type { SmarterScore } from '@smarter-app/shared';
 import type { UnlockMiniTaskResponse, PluginType } from '@smarter-app/shared';
 import type { CoachQueryRequest, CoachQueryResponse, CoachSuggestion, MiniTaskCoachContext } from '@/types/miniTaskJournal';
 
+// Importar servicios de protección
+import { checkAllRateLimits, RateLimitError } from '@/services/aiRateLimiter';
+import { checkCircuitBreakerState, recordSuccess, recordFailure, CircuitBreakerError } from '@/services/aiCircuitBreaker';
+import { executeOpenAICallWithTimeout, TimeoutError } from '@/services/aiTimeoutHandler';
+import { validateInput, sanitizeInput, ValidationError } from '@/services/aiInputValidator';
+import { getCachedResult, cacheResult } from '@/services/aiRequestDeduplicator';
+import { retry } from '@/services/aiRetryHandler';
+import { checkLoop, LoopDetectionError } from '@/services/aiLoopDetector';
+import { enqueue } from '@/services/aiRequestQueue';
+import { trackRequest } from '@/services/aiRequestTracker';
+import { createHash } from 'crypto';
+
 export interface SuggestedMiniTask {
   title: string;
   description?: string;
@@ -208,9 +220,139 @@ Responde SOLO con un JSON válido en este formato exacto:
   "isAction": <true si es una acción concreta, false si es un resultado abstracto>
 }`;
 
+/**
+ * Helper para crear hash del input (para tracking y deduplicación)
+ */
+function createInputHash(input: any): string {
+  const inputString = JSON.stringify(input);
+  return createHash('sha256').update(inputString).digest('hex').substring(0, 16);
+}
+
+/**
+ * Wrapper protegido para llamadas a OpenAI
+ */
+async function protectedAICall<T>(
+  operation: string,
+  userId: string,
+  input: any,
+  callFn: (signal: AbortSignal) => Promise<T>,
+  ip?: string
+): Promise<T> {
+  const startTime = Date.now();
+  const inputHash = createInputHash(input);
+  let status: 'success' | 'failure' | 'timeout' | 'rate_limited' | 'circuit_open' = 'success';
+  
+  try {
+    // 1. Validar input
+    await validateInput(operation, input);
+    
+    // 2. Sanitizar input
+    const sanitizedInput = sanitizeInput(input);
+    
+    // 3. Verificar rate limits
+    try {
+      await checkAllRateLimits(operation, userId, ip);
+    } catch (error) {
+      if (error instanceof RateLimitError) {
+        status = 'rate_limited';
+        await trackRequest(operation, status, userId, Date.now() - startTime, inputHash, error);
+        throw error;
+      }
+      throw error;
+    }
+    
+    // 4. Verificar circuit breaker
+    try {
+      await checkCircuitBreakerState(operation);
+    } catch (error) {
+      if (error instanceof CircuitBreakerError) {
+        status = 'circuit_open';
+        await trackRequest(operation, status, userId, Date.now() - startTime, inputHash, error);
+        throw error;
+      }
+      throw error;
+    }
+    
+    // 5. Verificar deduplicación
+    const cached = await getCachedResult<T>(operation, userId, sanitizedInput);
+    if (cached) {
+      await trackRequest(operation, 'success', userId, Date.now() - startTime, inputHash);
+      return cached;
+    }
+    
+    // 6. Verificar loop detection
+    try {
+      await checkLoop(operation, userId, sanitizedInput);
+    } catch (error) {
+      if (error instanceof LoopDetectionError) {
+        status = 'failure';
+        await trackRequest(operation, status, userId, Date.now() - startTime, inputHash, error);
+        throw error;
+      }
+      throw error;
+    }
+    
+    // 7. Ejecutar con timeout y retry
+    const result = await retry(
+      async () => {
+        try {
+          return await executeOpenAICallWithTimeout(operation, callFn);
+        } catch (error: any) {
+          if (error instanceof TimeoutError) {
+            status = 'timeout';
+          }
+          throw error;
+        }
+      },
+      undefined,
+      { maxAttempts: 3, baseDelay: 1000 }
+    );
+    
+    // 8. Cachear resultado
+    await cacheResult(operation, userId, sanitizedInput, result);
+    
+    // 9. Registrar éxito
+    const duration = Date.now() - startTime;
+    await trackRequest(operation, 'success', userId, duration, inputHash);
+    
+    // 10. Registrar éxito en circuit breaker
+    await recordSuccess(operation);
+    
+    return result;
+  } catch (error: any) {
+    const duration = Date.now() - startTime;
+    
+    // Determinar status final
+    if (error instanceof TimeoutError) {
+      status = 'timeout';
+    } else if (error instanceof RateLimitError) {
+      status = 'rate_limited';
+    } else if (error instanceof CircuitBreakerError) {
+      status = 'circuit_open';
+    } else {
+      status = 'failure';
+    }
+    
+    // Registrar fallo
+    await trackRequest(operation, status, userId, duration, inputHash, error);
+    
+    // Registrar fallo en circuit breaker (excepto para timeouts esperados)
+    if (status !== 'timeout') {
+      await recordFailure(operation);
+    }
+    
+    // Re-lanzar error
+    throw error;
+  }
+}
+
 export async function validateGoalSmart(
   request: GoalValidationRequest
 ): Promise<GoalValidationResponse> {
+  // Extraer userId del request si está disponible, sino usar 'anonymous'
+  const userId = (request as any).userId || 'anonymous';
+  const ip = (request as any).ip;
+  
   const prompt = `${GOAL_VALIDATION_PROMPT}
 
 Meta a evaluar:
@@ -223,66 +365,82 @@ ${request.userContext ? `Contexto del usuario: ${request.userContext}` : ''}`;
     const client = getClient();
     const model = getModel();
 
-    const response = await client.chat.completions.create({
-      model,
-      messages: [
-        {
-          role: 'system',
-          content: 'Eres un asistente experto en metodología SMARTER. Responde SOLO con JSON válido, sin texto adicional.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature: 0.3,
-      response_format: { type: 'json_object' },
-    });
+    const result = await protectedAICall<GoalValidationResponse>(
+      'validateGoal',
+      userId,
+      request,
+      async (signal) => {
+        const response = await client.chat.completions.create({
+          model,
+          messages: [
+            {
+              role: 'system',
+              content: 'Eres un asistente experto en metodología SMARTER. Responde SOLO con JSON válido, sin texto adicional.',
+            },
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+          temperature: 0.3,
+          response_format: { type: 'json_object' },
+        }, { signal });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No se recibió respuesta del modelo de IA');
-    }
+        const content = response.choices[0]?.message?.content;
+        if (!content) {
+          throw new Error('No se recibió respuesta del modelo de IA');
+        }
 
-    const parsed = JSON.parse(content) as GoalValidationResponse;
-    
-    console.log('🤖 [AI CLIENT] Respuesta del modelo parseada:', {
-      hasScores: !!parsed.scores,
-      hasSuggestedTitle: !!parsed.suggestedTitle,
-      hasSuggestedDescription: !!parsed.suggestedDescription,
-      suggestedMiniTasksLength: parsed.suggestedMiniTasks?.length || 0,
-      suggestedTitle: parsed.suggestedTitle,
-      suggestedDescription: parsed.suggestedDescription,
-      suggestedMiniTasks: parsed.suggestedMiniTasks,
-    });
-    
-    // Validar estructura
-    if (!parsed.scores || !parsed.average || typeof parsed.passed !== 'boolean') {
-      throw new Error('Respuesta del modelo de IA inválida: faltan scores o average');
-    }
+        const parsed = JSON.parse(content) as GoalValidationResponse;
+        
+        console.log('🤖 [AI CLIENT] Respuesta del modelo parseada:', {
+          hasScores: !!parsed.scores,
+          hasSuggestedTitle: !!parsed.suggestedTitle,
+          hasSuggestedDescription: !!parsed.suggestedDescription,
+          suggestedMiniTasksLength: parsed.suggestedMiniTasks?.length || 0,
+          suggestedTitle: parsed.suggestedTitle,
+          suggestedDescription: parsed.suggestedDescription,
+          suggestedMiniTasks: parsed.suggestedMiniTasks,
+        });
+        
+        // Validar estructura
+        if (!parsed.scores || !parsed.average || typeof parsed.passed !== 'boolean') {
+          throw new Error('Respuesta del modelo de IA inválida: faltan scores o average');
+        }
 
-    // Asegurar que siempre haya sugerencias (si el modelo no las proporcionó, usar valores por defecto)
-    if (!parsed.suggestedTitle) {
-      console.warn('⚠️ [AI CLIENT] El modelo no proporcionó suggestedTitle, usando título actual como sugerencia');
-      parsed.suggestedTitle = null; // Permitimos null pero lo manejamos en el frontend
-    }
-    
-    if (!parsed.suggestedDescription) {
-      console.warn('⚠️ [AI CLIENT] El modelo no proporcionó suggestedDescription');
-      parsed.suggestedDescription = null;
-    }
-    
-    if (!parsed.suggestedMiniTasks || parsed.suggestedMiniTasks.length === 0) {
-      console.warn('⚠️ [AI CLIENT] El modelo no proporcionó suggestedMiniTasks o el array está vacío');
-      parsed.suggestedMiniTasks = [];
-    }
+        // Asegurar que siempre haya sugerencias (si el modelo no las proporcionó, usar valores por defecto)
+        if (!parsed.suggestedTitle) {
+          console.warn('⚠️ [AI CLIENT] El modelo no proporcionó suggestedTitle, usando título actual como sugerencia');
+          parsed.suggestedTitle = null; // Permitimos null pero lo manejamos en el frontend
+        }
+        
+        if (!parsed.suggestedDescription) {
+          console.warn('⚠️ [AI CLIENT] El modelo no proporcionó suggestedDescription');
+          parsed.suggestedDescription = null;
+        }
+        
+        if (!parsed.suggestedMiniTasks || parsed.suggestedMiniTasks.length === 0) {
+          console.warn('⚠️ [AI CLIENT] El modelo no proporcionó suggestedMiniTasks o el array está vacío');
+          parsed.suggestedMiniTasks = [];
+        }
 
-    return parsed;
+        return parsed;
+      },
+      ip
+    );
+
+    return result;
   } catch (error) {
     console.error('Error en validación de goal con IA:', error);
     
     // Proporcionar mensaje de error más específico
     if (error instanceof Error) {
+      // Si es un error de protección, mantener el mensaje original
+      if (error instanceof RateLimitError || error instanceof CircuitBreakerError || 
+          error instanceof TimeoutError || error instanceof ValidationError || 
+          error instanceof LoopDetectionError) {
+        throw error;
+      }
       // Si es un error de configuración, mostrarlo claramente
       if (error.message.includes('no está configurada') || error.message.includes('no está configurado')) {
         throw new Error(`Configuración de IA faltante: ${error.message}`);
@@ -509,6 +667,10 @@ Responde SOLO con un JSON válido en este formato exacto:
 export async function unlockMiniTask(
   request: UnlockMiniTaskRequest
 ): Promise<UnlockMiniTaskResponse> {
+  // Extraer userId del request si está disponible
+  const userId = (request as any).userId || 'anonymous';
+  const ip = (request as any).ip;
+  
   const prompt = `${UNLOCK_MINITASK_PROMPT}
 
 Minitarea a analizar:
@@ -524,28 +686,33 @@ ${request.goalContext.description ? `Descripción: ${request.goalContext.descrip
     const client = getClient();
     const model = getModel();
 
-    const response = await client.chat.completions.create({
-      model,
-      messages: [
-        {
-          role: 'system',
-          content: 'Eres un asistente experto en metodología SMARTER y gestión de tareas. Responde SOLO con JSON válido, sin texto adicional.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature: 0.4,
-      response_format: { type: 'json_object' },
-    });
+    const result = await protectedAICall<UnlockMiniTaskResponse>(
+      'unlockMiniTask',
+      userId,
+      request,
+      async (signal) => {
+        const response = await client.chat.completions.create({
+          model,
+          messages: [
+            {
+              role: 'system',
+              content: 'Eres un asistente experto en metodología SMARTER y gestión de tareas. Responde SOLO con JSON válido, sin texto adicional.',
+            },
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+          temperature: 0.4,
+          response_format: { type: 'json_object' },
+        }, { signal });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No se recibió respuesta del modelo de IA');
-    }
+        const content = response.choices[0]?.message?.content;
+        if (!content) {
+          throw new Error('No se recibió respuesta del modelo de IA');
+        }
 
-    const parsed = JSON.parse(content) as UnlockMiniTaskResponse;
+        const parsed = JSON.parse(content) as UnlockMiniTaskResponse;
     
     // Validar estructura básica
     if (!parsed.improvedTitle || !parsed.plugins || !parsed.smarterAnalysis) {
@@ -641,12 +808,17 @@ ${request.goalContext.description ? `Descripción: ${request.goalContext.descrip
       });
     }
 
-    console.log('✅ [UNLOCK] Plugins finales asignados:', {
-      count: parsed.plugins.length,
-      plugins: parsed.plugins.map(p => p.id),
-    });
+        console.log('✅ [UNLOCK] Plugins finales asignados:', {
+          count: parsed.plugins.length,
+          plugins: parsed.plugins.map(p => p.id),
+        });
 
-    return parsed;
+        return parsed;
+      },
+      ip
+    );
+
+    return result;
   } catch (error) {
     console.error('Error en unlock de minitask con IA:', error);
     
@@ -727,6 +899,10 @@ export async function queryMiniTaskCoach(
   context: MiniTaskCoachContext,
   query: string
 ): Promise<CoachQueryResponse> {
+  // Extraer userId del context si está disponible
+  const userId = (context as any).userId || 'anonymous';
+  const ip = (context as any).ip;
+  
   const journalHistoryText = context.journalHistory && context.journalHistory.length > 0
     ? context.journalHistory
         .slice(-14) // Últimas 14 entradas
@@ -773,39 +949,57 @@ export async function queryMiniTaskCoach(
     const client = getClient();
     const model = getModel();
 
-    const response = await client.chat.completions.create({
-      model,
-      messages: [
-        {
-          role: 'system',
-          content: 'Eres un coach experto en metodología SMARTER. Responde SOLO con JSON válido, sin texto adicional.',
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature: 0.5,
-      response_format: { type: 'json_object' },
-    });
-
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No se recibió respuesta del modelo de IA');
-    }
-
-    const parsed = JSON.parse(content) as CoachQueryResponse;
+    const requestInput = { context, query };
     
-    // Validar estructura
-    if (!parsed.feedback || !parsed.smarterEvaluation || !parsed.suggestions) {
-      throw new Error('Respuesta del modelo de IA inválida: faltan campos requeridos');
-    }
+    const result = await protectedAICall<CoachQueryResponse>(
+      'queryCoach',
+      userId,
+      requestInput,
+      async (signal) => {
+        const response = await client.chat.completions.create({
+          model,
+          messages: [
+            {
+              role: 'system',
+              content: 'Eres un coach experto en metodología SMARTER. Responde SOLO con JSON válido, sin texto adicional.',
+            },
+            {
+              role: 'user',
+              content: prompt,
+            },
+          ],
+          temperature: 0.5,
+          response_format: { type: 'json_object' },
+        }, { signal });
 
-    return parsed;
+        const content = response.choices[0]?.message?.content;
+        if (!content) {
+          throw new Error('No se recibió respuesta del modelo de IA');
+        }
+
+        const parsed = JSON.parse(content) as CoachQueryResponse;
+        
+        // Validar estructura
+        if (!parsed.feedback || !parsed.smarterEvaluation || !parsed.suggestions) {
+          throw new Error('Respuesta del modelo de IA inválida: faltan campos requeridos');
+        }
+
+        return parsed;
+      },
+      ip
+    );
+
+    return result;
   } catch (error) {
     console.error('Error en consulta al coach con IA:', error);
     
     if (error instanceof Error) {
+      // Si es un error de protección, mantener el mensaje original
+      if (error instanceof RateLimitError || error instanceof CircuitBreakerError || 
+          error instanceof TimeoutError || error instanceof ValidationError || 
+          error instanceof LoopDetectionError) {
+        throw error;
+      }
       throw new Error(`Error al consultar al coach: ${error.message}`);
     }
     

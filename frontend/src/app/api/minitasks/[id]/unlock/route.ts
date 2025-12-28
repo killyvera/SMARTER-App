@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { unlockMiniTaskService } from '@/services/miniTaskService';
 import { getUserId } from '@/lib/auth/getUserId';
 import { logApiRequest, logApiError } from '@/lib/api-logger';
+import { getClientIP } from '@/lib/getClientIP';
 
 export async function POST(
   request: NextRequest,
@@ -11,6 +12,8 @@ export async function POST(
   
   try {
     const userId = await getUserId(request);
+    const ip = getClientIP(request);
+    // Pasar IP al servicio (a través de contexto si es necesario)
     const result = await unlockMiniTaskService(params.id, userId);
     
     const duration = Date.now() - startTime;

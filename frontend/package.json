@@ -13,7 +13,8 @@
     "db:migrate:dev": "npx dotenv-cli -e .env.local -- prisma migrate dev",
     "db:seed": "npx dotenv-cli -e .env.local -- tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "db:check-supabase": "npx dotenv-cli -e .env.local -- tsx migrate-to-supabase.ts"
+    "db:check-supabase": "npx dotenv-cli -e .env.local -- tsx migrate-to-supabase.ts",
+    "db:test-connection": "npx dotenv-cli -e .env.local -- tsx test-supabase-connection.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

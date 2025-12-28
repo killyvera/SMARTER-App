@@ -14,6 +14,26 @@ const envSchema = z.object({
   AZURE_OPENAI_API_VERSION: z.string().default('2024-02-15-preview'),
   // Provider selection
   AI_PROVIDER: z.enum(['openai', 'azure']).default('openai'),
+  // Rate Limiting (opcional, con defaults)
+  AI_RATE_LIMIT_VALIDATE_GOAL: z.string().default('5'),
+  AI_RATE_LIMIT_UNLOCK_MINITASK: z.string().default('3'),
+  AI_RATE_LIMIT_QUERY_COACH: z.string().default('10'),
+  AI_RATE_LIMIT_GLOBAL_PER_SECOND: z.string().default('20'),
+  // Circuit Breaker (opcional, con defaults)
+  AI_CIRCUIT_BREAKER_FAILURE_THRESHOLD: z.string().default('5'),
+  AI_CIRCUIT_BREAKER_TIMEOUT: z.string().default('30000'),
+  AI_CIRCUIT_BREAKER_SUCCESS_THRESHOLD: z.string().default('2'),
+  // Timeouts (opcional, con defaults)
+  AI_TIMEOUT_VALIDATE_GOAL: z.string().default('30000'),
+  AI_TIMEOUT_UNLOCK_MINITASK: z.string().default('45000'),
+  AI_TIMEOUT_QUERY_COACH: z.string().default('20000'),
+  // Retry (opcional, con defaults)
+  AI_RETRY_MAX_ATTEMPTS: z.string().default('3'),
+  AI_RETRY_BACKOFF_BASE: z.string().default('1000'),
+  // Loop Detection (opcional, con defaults)
+  AI_LOOP_DETECTION_THRESHOLD: z.string().default('3'),
+  AI_LOOP_DETECTION_WINDOW: z.string().default('10000'),
+  AI_LOOP_DETECTION_BLOCK_DURATION: z.string().default('60000'),
 });
 
 export type Env = z.infer<typeof envSchema>;

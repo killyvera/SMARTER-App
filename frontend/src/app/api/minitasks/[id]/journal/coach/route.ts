@@ -3,6 +3,7 @@ import { queryCoachService } from '@/services/miniTaskJournalService';
 import { getUserId } from '@/lib/auth/getUserId';
 import { coachQuerySchema } from '@smarter-app/shared';
 import { logApiRequest, logApiError } from '@/lib/api-logger';
+import { getClientIP } from '@/lib/getClientIP';
 
 export async function POST(
   request: NextRequest,

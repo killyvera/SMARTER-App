@@ -257,7 +257,7 @@ export async function queryCoachService(
   };
   
   // Consultar al coach
-  const coachResponse = await queryMiniTaskCoach(context, query);
+  const coachResponse = await queryMiniTaskCoach({ ...context, userId } as any, query);
   
   // Guardar la consulta y respuesta en la última entrada del journal (si existe)
   if (includeHistory && journalHistory && journalHistory.length > 0) {

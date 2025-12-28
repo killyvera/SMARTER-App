@@ -45,6 +45,8 @@ export async function validateGoalService(
       scheduledDate?: string | null;
       scheduledTime?: string | null;
     }>;
+    userId?: string;
+    ip?: string;
   }
 ) {
   const goal = await findGoalById(goalId, userId);
@@ -90,7 +92,8 @@ export async function validateGoalService(
       title: updatedGoal.title,
       description: updatedGoal.description || undefined,
       deadline: updatedGoal.deadline ? format(updatedGoal.deadline, 'yyyy-MM-dd') : undefined,
-    });
+      userId,
+    } as any);
     
     // Actualizar isSingleDayGoal y plannedHours si el agente IA los detectó
     if (validation.isSingleDayGoal !== undefined || validation.plannedHours !== undefined) {
@@ -203,7 +206,9 @@ export async function validateGoalService(
     title: goal.title,
     description: goal.description || undefined,
     deadline: goal.deadline ? format(goal.deadline, 'yyyy-MM-dd') : undefined,
-  });
+    userId: options?.userId || userId,
+    ip: options?.ip,
+  } as any);
   
   // NO guardar nada aún, solo retornar sugerencias
   return {

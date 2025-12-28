@@ -1,0 +1,8 @@
+# Ignorar archivos de cache en el escáner de secretos
+.netlify/.next/cache/
+.netlify/.next/cache/**/*
+.next/cache/
+.next/cache/**/*
+**/.tsbuildinfo
+*.tsbuildinfo
+

@@ -2,6 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@smarter-app/shared'],
+  // Configuración para Netlify
+  ...(process.env.NETLIFY && {
+    // En Netlify, usar output standalone para mejor compatibilidad
+    output: 'standalone',
+  }),
   // Deshabilitar cache de TypeScript en producción para evitar detección de secretos
   ...(process.env.NODE_ENV === 'production' && {
     typescript: {

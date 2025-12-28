@@ -1,6 +1,7 @@
 [build]
-  command = "cd frontend && rm -rf .next/cache .netlify/.next/cache && NETLIFY=true npm ci --legacy-peer-deps --prefer-offline --no-audit --no-fund && NETLIFY=true npm run build"
-  publish = "frontend/.next"
+  base = "frontend"
+  command = "rm -rf .next/cache .netlify/.next/cache && NETLIFY=true npm ci --legacy-peer-deps --prefer-offline --no-audit --no-fund && NETLIFY=true npm run build"
+  publish = ".next"
 
 [build.environment]
   NODE_VERSION = "20"
@@ -16,10 +17,8 @@
   package = "@netlify/plugin-nextjs"
 
 # Redirecciones para Next.js App Router
-[[redirects]]
-  from = "/*"
-  to = "/.netlify/functions/___netlify-handler"
-  status = 200
+# El plugin @netlify/plugin-nextjs maneja las redirecciones automáticamente
+# No necesitamos configurar redirects manualmente
 
 # Headers de seguridad
 [[headers]]

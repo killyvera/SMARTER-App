@@ -68,3 +68,13 @@ logs/
 **/VARIABLES-*.txt
 **/test-supabase-connection.ts
 **/check-supabase-connection.ts
+
+# Documentación con valores de ejemplo (evitar detección de secretos)
+DONDE-LEE-VARIABLES.md
+MIGRATION-SUMMARY.md
+NETLIFY-BUILD-FIX.md
+NETLIFY-BUILD-PARAMS.md
+NETLIFY-SETUP.md
+SETUP.md
+SUPABASE-SETUP.md
+README.md

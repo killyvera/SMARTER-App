@@ -73,39 +73,47 @@ netlify deploy --prod
 
 ## Configuración de Base de Datos
 
-⚠️ **IMPORTANTE:** SQLite no funciona bien en Netlify (es read-only).
+⚠️ **IMPORTANTE:** SQLite no funciona bien en Netlify (es read-only). **Debes usar PostgreSQL.**
 
-### Opción 1: Usar PostgreSQL (Recomendado)
+### Usar Supabase (Recomendado)
 
-1. Crea una base de datos PostgreSQL gratuita en:
-   - [Supabase](https://supabase.com) (gratis)
-   - [Neon](https://neon.tech) (gratis)
-   - [Railway](https://railway.app) (gratis con límites)
+Esta aplicación está configurada para usar **Supabase** como base de datos PostgreSQL.
 
-2. Obtén la connection string (ej: `postgresql://user:pass@host:5432/dbname`)
+#### Pasos de Configuración:
 
-3. Actualiza `DATABASE_URL` en Netlify:
-   ```
-   DATABASE_URL=postgresql://user:pass@host:5432/dbname
-   ```
+1. **Crear proyecto en Supabase:**
+   - Ve a https://supabase.com y crea un proyecto
+   - Guarda la contraseña de la base de datos
 
-4. Actualiza `schema.prisma`:
-   ```prisma
-   datasource db {
-     provider = "postgresql"
-     url      = env("DATABASE_URL")
-   }
-   ```
+2. **Obtener Connection String:**
+   - En Supabase Dashboard → **Settings** → **Database**
+   - Copia la connection string (formato URI)
+   - Reemplaza `[YOUR-PASSWORD]` con tu contraseña
 
-5. Ejecuta migraciones:
+3. **Configurar en Netlify:**
+   - Ve a **Site settings** → **Environment variables**
+   - Agrega:
+     ```
+     DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:6543/postgres?pgbouncer=true&connection_limit=1
+     ```
+   - **Nota:** Usa el puerto `6543` para connection pooling (recomendado para serverless)
+
+4. **Ejecutar migraciones:**
    ```bash
    cd frontend
    npx prisma migrate deploy
    ```
 
-### Opción 2: Usar SQLite con Volumen Persistente
+Para más detalles, consulta [SUPABASE-SETUP.md](SUPABASE-SETUP.md)
 
-Netlify no soporta volúmenes persistentes, así que esta opción **NO funciona** en producción.
+### Otras Opciones de PostgreSQL
+
+Si prefieres otra opción:
+- [Neon](https://neon.tech) (gratis)
+- [Railway](https://railway.app) (gratis con límites)
+- [Render](https://render.com) (gratis con límites)
+
+Solo asegúrate de usar el connection string correcto en `DATABASE_URL`.
 
 ## Estructura del Proyecto
 

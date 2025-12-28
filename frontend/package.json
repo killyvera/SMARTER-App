@@ -9,8 +9,11 @@
     "lint": "next lint",
     "db:generate": "prisma generate",
     "db:migrate": "npx dotenv-cli -e .env.local -- prisma db push",
+    "db:migrate:deploy": "npx dotenv-cli -e .env.local -- prisma migrate deploy",
+    "db:migrate:dev": "npx dotenv-cli -e .env.local -- prisma migrate dev",
     "db:seed": "npx dotenv-cli -e .env.local -- tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:check-supabase": "npx dotenv-cli -e .env.local -- tsx migrate-to-supabase.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

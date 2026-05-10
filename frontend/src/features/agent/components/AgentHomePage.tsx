@@ -8,9 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Loader2, MessageSquarePlus, Send, Trash2 } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ClipboardList, Loader2, MessageSquarePlus, Send, Trash2, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { sanitizeAgentApiErrorForClient } from '@/lib/agentErrorMessage';
+import { friendlyAgentToolMessage, sanitizeAgentApiErrorForClient } from '@/lib/agentErrorMessage';
 import { ProposalToolPreview } from '@/features/agent/components/proposals/ProposalToolPreview';
 import { AgentTodayPanel } from '@/features/agent/components/AgentTodayPanel';
 import {
@@ -26,6 +26,9 @@ import {
   type SessionsIndex,
 } from '@/features/agent/agentChatSessions';
 import { AGENT_CHAT_SHORTCUTS } from '@/features/agent/agentChatShortcuts';
+import { SmarterWorksheetWidget } from '@/features/agent/components/widgets/SmarterWorksheetWidget';
+import { MinitaskPickWidget } from '@/features/agent/components/widgets/MinitaskPickWidget';
+import type { MinitaskPickItem } from '@/features/agent/components/widgets/MinitaskPickWidget';
 import Link from 'next/link';
 
 type UiProposal = {
@@ -36,7 +39,14 @@ type UiProposal = {
   approvalToken: string;
 };
 
-type UiMsgKind = 'text' | 'goal_snapshot' | 'task_table';
+type UiMsgKind =
+  | 'text'
+  | 'goal_snapshot'
+  | 'task_table'
+  | 'action_result'
+  | 'smarter_worksheet'
+  | 'minitask_pick';
+type SystemTone = 'default' | 'error' | 'coach';
 
 type GoalSnapRow = { id: string; title: string; status: string };
 type TaskSnapRow = { id: string; title: string; status: string; goalTitle?: string };
@@ -49,6 +59,9 @@ type UiMsg = {
   kind?: UiMsgKind;
   goalRows?: GoalSnapRow[];
   taskRows?: TaskSnapRow[];
+  actionResults?: Array<{ ok: boolean; message: string }>;
+  systemTone?: SystemTone;
+  minitaskPick?: { goalId: string; feedback?: string; items: MinitaskPickItem[] };
 };
 
 type AgentTurnResponse =
@@ -60,7 +73,17 @@ type AgentTurnResponse =
     }
   | {
       type: 'execute_result';
-      results: Array<{ approvalToken: string; ok: boolean; message: string }>;
+      results: Array<{
+        approvalToken: string;
+        ok: boolean;
+        message: string;
+        extras?: {
+          kind: string;
+          goalId?: string;
+          suggestedMiniTasks?: Array<{ title: string; description?: string }>;
+          feedback?: string;
+        };
+      }>;
     };
 
 function id() {
@@ -76,9 +99,27 @@ function migrateLegacyMessages(raw: unknown): UiMsg[] | null {
       role: o.role === 'user' || o.role === 'assistant' || o.role === 'system' ? o.role : 'system',
       content: String(o.content ?? ''),
       proposals: Array.isArray(o.proposals) ? (o.proposals as UiProposal[]) : undefined,
-      kind: o.kind === 'goal_snapshot' || o.kind === 'task_table' ? o.kind : undefined,
+      kind:
+        o.kind === 'goal_snapshot' ||
+        o.kind === 'task_table' ||
+        o.kind === 'action_result' ||
+        o.kind === 'smarter_worksheet' ||
+        o.kind === 'minitask_pick'
+          ? o.kind
+          : undefined,
       goalRows: Array.isArray(o.goalRows) ? (o.goalRows as GoalSnapRow[]) : undefined,
       taskRows: Array.isArray(o.taskRows) ? (o.taskRows as TaskSnapRow[]) : undefined,
+      actionResults: Array.isArray(o.actionResults)
+        ? (o.actionResults as Array<{ ok: boolean; message: string }>)
+        : undefined,
+      systemTone: o.systemTone === 'error' || o.systemTone === 'coach' ? o.systemTone : undefined,
+      minitaskPick:
+        o.minitaskPick &&
+        typeof o.minitaskPick === 'object' &&
+        typeof (o.minitaskPick as { goalId?: string }).goalId === 'string' &&
+        Array.isArray((o.minitaskPick as { items?: unknown }).items)
+          ? (o.minitaskPick as UiMsg['minitaskPick'])
+          : undefined,
     };
   });
 }
@@ -134,7 +175,7 @@ export function AgentHomePage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [booted, setBooted] = useState(false);
-  const [coachMode, setCoachMode] = useState(false);
+  const [coachMode, setCoachMode] = useState(true);
   const [coachStrict, setCoachStrict] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -164,7 +205,7 @@ export function AgentHomePage() {
       const coachRaw = localStorage.getItem(`smarter-agent-coach:${userId}`);
       if (coachRaw) {
         const o = JSON.parse(coachRaw) as { mode?: boolean; strict?: boolean };
-        setCoachMode(Boolean(o.mode));
+        setCoachMode(o.mode !== false);
         setCoachStrict(Boolean(o.strict));
       }
     } catch {
@@ -225,6 +266,9 @@ export function AgentHomePage() {
       ]);
 
       const lines: string[] = [];
+      lines.push(
+        'Trabajo como coach SMARTER: puedo guiarte con preguntas para una meta en borrador, validarla (preview y confirm) antes de activarla, y proponer minitasks concretas o desbloquearlas con IA y plugins.'
+      );
       lines.push(
         `Resumen: ${stats.goals.active} metas activas de ${stats.goals.total}, ${stats.miniTasks.pending} minitasks pendientes, ${stats.miniTasks.completed} completadas. Progreso medio ~${stats.progress.percentage}%.`
       );
@@ -346,6 +390,20 @@ export function AgentHomePage() {
     }
   }, [userId, activeSessionId, sessionsIndex]);
 
+  const insertSmarterWorksheetCard = useCallback(() => {
+    setMessages((p) => [
+      ...p,
+      {
+        id: id(),
+        role: 'system',
+        content:
+          'Cuestionario SMARTER en el chat: completá cada criterio del grid; se guarda en tu meta DRAFT y podés pedir validación preview al agente.',
+        kind: 'smarter_worksheet',
+        systemTone: 'coach',
+      },
+    ]);
+  }, []);
+
   const sendUserMessage = async (presetText?: string) => {
     const rawInput = presetText ?? input;
     const text = rawInput.trim();
@@ -389,6 +447,7 @@ export function AgentHomePage() {
           id: id(),
           role: 'system',
           content: sanitizeAgentApiErrorForClient(raw),
+          systemTone: 'error',
         },
       ]);
     } finally {
@@ -415,17 +474,43 @@ export function AgentHomePage() {
       });
 
       if (res.type === 'execute_result') {
-        const summary = res.results.map((r) => `${r.ok ? '✓' : '✗'} ${r.message}`).join('\n');
+        const actionResults = res.results.map((r) => ({
+          ok: r.ok,
+          message: friendlyAgentToolMessage(r.message),
+        }));
         const hadOk = res.results.some((r) => r.ok);
-        setMessages((prev) =>
-          prev
-            .map((m) => (m.id === msgId ? { ...m, proposals: undefined } : m))
-            .concat({
+        const previewExtra = res.results.find((r) => r.ok && r.extras?.kind === 'validate_goal_preview')?.extras;
+
+        setMessages((prev) => {
+          const cleared = prev.map((m) => (m.id === msgId ? { ...m, proposals: undefined } : m));
+          const withResult = cleared.concat({
+            id: id(),
+            role: 'system',
+            content: 'Resultado de las acciones',
+            kind: 'action_result',
+            actionResults,
+          });
+          if (
+            previewExtra &&
+            previewExtra.kind === 'validate_goal_preview' &&
+            typeof previewExtra.goalId === 'string' &&
+            Array.isArray(previewExtra.suggestedMiniTasks)
+          ) {
+            return withResult.concat({
               id: id(),
               role: 'system',
-              content: `Resultado de acciones:\n${summary}`,
-            })
-        );
+              content: 'Minitasks sugeridas — elegí cuáles enviar a confirmación SMARTER',
+              kind: 'minitask_pick',
+              systemTone: 'coach',
+              minitaskPick: {
+                goalId: previewExtra.goalId,
+                feedback: typeof previewExtra.feedback === 'string' ? previewExtra.feedback : undefined,
+                items: previewExtra.suggestedMiniTasks as MinitaskPickItem[],
+              },
+            });
+          }
+          return withResult;
+        });
         if (hadOk) {
           queryClient.invalidateQueries({ queryKey: ['agent-today-panel'] });
           const widgets = await fetchSnapshotWidgets();
@@ -442,6 +527,7 @@ export function AgentHomePage() {
           id: id(),
           role: 'system',
           content: sanitizeAgentApiErrorForClient(raw),
+          systemTone: 'error',
         },
       ]);
     } finally {
@@ -496,7 +582,7 @@ export function AgentHomePage() {
         <div className="flex items-center gap-2">
           <Switch id={coachModeId} checked={coachMode} onCheckedChange={setCoachMode} />
           <Label htmlFor={coachModeId} className="text-[11px] font-normal cursor-pointer">
-            Modo coach SMARTER
+            Coach extendido (más preguntas antes de guardar)
           </Label>
         </div>
         <div className="flex items-center gap-2">
@@ -505,6 +591,17 @@ export function AgentHomePage() {
             Ejecución estricta
           </Label>
         </div>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="h-8 gap-1 px-2 text-xs shrink-0"
+          disabled={loading || hasOpenProposals}
+          onClick={() => insertSmarterWorksheetCard()}
+        >
+          <ClipboardList className="h-3.5 w-3.5" aria-hidden />
+          Grid SMARTER
+        </Button>
       </div>
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 min-h-0">
         {messages.map((m) => (
@@ -514,15 +611,53 @@ export function AgentHomePage() {
                 'max-w-[90%] rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words',
                 m.role === 'user' && 'bg-primary text-primary-foreground',
                 m.role === 'assistant' && 'bg-muted',
-                m.role === 'system' && 'bg-amber-500/15 text-amber-950 dark:text-amber-100 border border-amber-500/30 text-xs'
+                m.role === 'system' &&
+                  m.systemTone === 'error' &&
+                  'bg-destructive/10 text-destructive-foreground border border-destructive/30 text-xs',
+                m.role === 'system' &&
+                  m.systemTone === 'coach' &&
+                  'bg-sky-500/10 text-sky-950 dark:text-sky-100 border border-sky-500/25 text-xs',
+                m.role === 'system' &&
+                  !m.systemTone &&
+                  'bg-amber-500/15 text-amber-950 dark:text-amber-100 border border-amber-500/30 text-xs'
               )}
             >
               {m.kind === 'goal_snapshot' && m.goalRows && m.goalRows.length > 0 ? (
                 <AgentGoalSnapshotTable rows={m.goalRows} titleLine={m.content} />
               ) : m.kind === 'task_table' && m.taskRows && m.taskRows.length > 0 ? (
                 <AgentTaskSnapshotTable rows={m.taskRows} titleLine={m.content} />
+              ) : m.kind === 'smarter_worksheet' ? (
+                <div className="space-y-3">
+                  <p className="font-medium text-sm leading-snug text-amber-950 dark:text-amber-50">{m.content}</p>
+                  <SmarterWorksheetWidget
+                    disabled={loading || hasOpenProposals}
+                    onAfterApply={(prompt) => void sendUserMessage(prompt)}
+                  />
+                </div>
+              ) : m.kind === 'minitask_pick' && m.minitaskPick ? (
+                <div className="space-y-3">
+                  <p className="font-medium text-sm leading-snug text-amber-950 dark:text-amber-50">{m.content}</p>
+                  <MinitaskPickWidget
+                    goalId={m.minitaskPick.goalId}
+                    feedback={m.minitaskPick.feedback}
+                    items={m.minitaskPick.items}
+                    disabled={loading || hasOpenProposals}
+                    onRequestConfirm={(prompt) => void sendUserMessage(prompt)}
+                  />
+                </div>
+              ) : m.kind === 'action_result' && m.actionResults && m.actionResults.length > 0 ? (
+                <AgentActionResultList title={m.content} results={m.actionResults} />
               ) : (
-                m.content
+                <>
+                  {m.systemTone === 'error' ? (
+                    <p className="flex gap-2 items-start font-medium">
+                      <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" aria-hidden />
+                      <span>{m.content}</span>
+                    </p>
+                  ) : (
+                    m.content
+                  )}
+                </>
               )}
               {m.proposals && m.proposals.length > 0 ? (
                 <div className="mt-3 space-y-2 border-t border-border/50 pt-2">
@@ -605,6 +740,34 @@ export function AgentHomePage() {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+function AgentActionResultList({ title, results }: { title: string; results: Array<{ ok: boolean; message: string }> }) {
+  return (
+    <div className="space-y-2">
+      <p className="font-semibold text-amber-950 dark:text-amber-50">{title}</p>
+      <ul className="space-y-2">
+        {results.map((r, i) => (
+          <li
+            key={i}
+            className={cn(
+              'flex gap-2 rounded-lg border px-2.5 py-2 text-[11px] leading-snug',
+              r.ok
+                ? 'border-emerald-500/35 bg-emerald-500/10 text-emerald-950 dark:text-emerald-50'
+                : 'border-destructive/35 bg-destructive/10 text-destructive dark:text-destructive-foreground'
+            )}
+          >
+            {r.ok ? (
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden />
+            ) : (
+              <XCircle className="h-4 w-4 shrink-0 text-destructive" aria-hidden />
+            )}
+            <span>{r.message}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

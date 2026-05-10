@@ -1,3 +1,5 @@
+import { sanitizeAgentApiErrorForClient } from '@/lib/agentErrorMessage';
+
 const API_URL = '/api';
 
 // Función para limpiar autenticación cuando el token es inválido
@@ -44,29 +46,43 @@ export async function apiRequest<T>(
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Error desconocido' }));
-      const errorMessage = error.error || `Error ${response.status}`;
-      
+      let errorMessage = error.error || `Error ${response.status}`;
+      if (endpoint.includes('/assistant/') && typeof errorMessage === 'string') {
+        errorMessage = sanitizeAgentApiErrorForClient(errorMessage);
+      }
+
       console.error('❌ [API REQUEST] Error en respuesta:', {
         endpoint,
         status: response.status,
         error,
       });
-      
-      // Detectar errores de token inválido (401 o mensaje relacionado con token)
-      const isTokenError = 
-        response.status === 401 || 
-        (typeof errorMessage === 'string' && (
-          errorMessage.toLowerCase().includes('token') ||
-          errorMessage.toLowerCase().includes('autenticación') ||
-          errorMessage.toLowerCase().includes('authentication') ||
-          errorMessage.toLowerCase().includes('signature verification')
-        ));
-      
+
+      const isAssistant = endpoint.includes('/assistant/');
+      const msgLower = String(errorMessage).toLowerCase();
+      const looksLikeAiProvider =
+        isAssistant &&
+        (msgLower.includes('openai') ||
+          msgLower.includes('api key') ||
+          msgLower.includes('azure') ||
+          msgLower.includes('modelo de ia'));
+
+      // No cerrar sesión de la app por fallos del proveedor de IA (401/403 del upstream)
+      const isTokenError =
+        !looksLikeAiProvider &&
+        (response.status === 401 ||
+          (typeof errorMessage === 'string' &&
+            (msgLower.includes('jwt') ||
+              msgLower.includes('sesión') ||
+              msgLower.includes('autenticación') ||
+              msgLower.includes('authentication') ||
+              msgLower.includes('signature verification') ||
+              msgLower.includes('no autorizado'))));
+
       if (isTokenError) {
         console.warn('🔒 [API REQUEST] Token inválido detectado, limpiando autenticación');
         clearAuthAndRedirect();
       }
-      
+
       throw new Error(errorMessage);
     }
 

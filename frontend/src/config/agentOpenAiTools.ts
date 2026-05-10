@@ -6,6 +6,7 @@ export const AGENT_TOOL_NAMES = [
   'delete_goal',
   'activate_goal',
   'validate_goal',
+  'apply_smarter_worksheet',
   'sync_goals_completion',
   'create_minitask',
   'update_minitask',
@@ -119,6 +120,28 @@ export const GLOBAL_AGENT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = 
           },
         },
         required: ['goalId', 'phase'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'apply_smarter_worksheet',
+      description:
+        'Fusiona en la meta DRAFT las respuestas del grid SMARTER extendido (S,M,A,R,T + Evaluable + Revisable) en la descripción, bajo un bloque fijo. Usalo cuando el usuario completó el cuestionario por criterio o dictó respuestas claras por letra. Luego conviene validate_goal preview.',
+      parameters: {
+        type: 'object',
+        properties: {
+          goalId: { type: 'string' },
+          S: { type: 'string', description: 'Específico' },
+          M: { type: 'string', description: 'Medible' },
+          A: { type: 'string', description: 'Alcanzable' },
+          R: { type: 'string', description: 'Relevante' },
+          T: { type: 'string', description: 'Temporal / plazo' },
+          E_evaluable: { type: 'string', description: 'Evaluable — cómo revisar progreso' },
+          R_revisable: { type: 'string', description: 'Revisable — cómo ajustar si falla' },
+        },
+        required: ['goalId'],
       },
     },
   },

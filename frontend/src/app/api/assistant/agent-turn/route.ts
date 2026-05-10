@@ -5,7 +5,7 @@ import { getClientIP } from '@/lib/getClientIP';
 import { buildGlobalSmarterContext, contextToPromptBlock } from '@/services/globalSmarterContextService';
 import { runGlobalAgentTurn } from '@/clients/aiClient';
 import { mintToolApprovalToken, defaultApprovalWindow, verifyToolApprovalToken } from '@/lib/agentToolApproval';
-import { executeAgentTool } from '@/services/agentToolExecutor';
+import { executeAgentTool, type AgentToolResultExtras } from '@/services/agentToolExecutor';
 import { AGENT_TOOL_NAME_SET, type AgentToolName } from '@/config/agentOpenAiTools';
 import { logApiRequest, logApiError } from '@/lib/api-logger';
 import { sanitizeAgentApiErrorForClient } from '@/lib/agentErrorMessage';
@@ -22,7 +22,12 @@ export async function POST(request: NextRequest) {
     const parsed = agentTurnBodySchema.parse(body);
 
     if (parsed.mode === 'execute_tools') {
-      const results: Array<{ approvalToken: string; ok: boolean; message: string }> = [];
+      const results: Array<{
+        approvalToken: string;
+        ok: boolean;
+        message: string;
+        extras?: AgentToolResultExtras;
+      }> = [];
 
       for (const ex of parsed.executions) {
         const payload = verifyToolApprovalToken(ex.approvalToken, userId);
@@ -37,7 +42,12 @@ export async function POST(request: NextRequest) {
         const out = await executeAgentTool(userId, payload.name as AgentToolName, payload.arguments, {
           coachStrict: parsed.coachStrict === true,
         });
-        results.push({ approvalToken: payload.toolCallId, ok: out.ok, message: out.message });
+        results.push({
+          approvalToken: payload.toolCallId,
+          ok: out.ok,
+          message: out.message,
+          ...(out.extras ? { extras: out.extras } : {}),
+        });
       }
 
       const duration = Date.now() - start;
@@ -108,6 +118,7 @@ function summarizeTool(name: string, argsJson: string): string {
     if (name === 'delete_goal') return `Eliminar meta ${String(a.goalId ?? '').slice(0, 8)}…`;
     if (name === 'activate_goal') return `Activar meta ${String(a.goalId ?? '').slice(0, 8)}…`;
     if (name === 'validate_goal') return `Validar meta (${String(a.phase ?? '')})`;
+    if (name === 'apply_smarter_worksheet') return `Cuestionario SMARTER → meta ${String(a.goalId ?? '').slice(0, 8)}…`;
     if (name === 'sync_goals_completion') return 'Sincronizar completitud de metas';
     if (name === 'create_minitask') return `Crear minitask: ${String(a.title ?? '').slice(0, 40)}`;
     if (name === 'update_minitask') return `Actualizar minitask ${String(a.miniTaskId ?? '').slice(0, 8)}…`;

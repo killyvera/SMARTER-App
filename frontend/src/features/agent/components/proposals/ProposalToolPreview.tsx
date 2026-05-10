@@ -64,6 +64,18 @@ export function ProposalToolPreview({ name, argumentsJson }: ProposalPreviewProp
             ) : null}
           </>
         )}
+        {tool === 'apply_smarter_worksheet' && (
+          <>
+            <Row label="Meta ID" value={str('goalId')} />
+            <Row label="S" value={str('S')} />
+            <Row label="M" value={str('M')} />
+            <Row label="A" value={str('A')} />
+            <Row label="R" value={str('R')} />
+            <Row label="T" value={str('T')} />
+            <Row label="E (Evaluable)" value={str('E_evaluable')} />
+            <Row label="R (Revisable)" value={str('R_revisable')} />
+          </>
+        )}
         {tool === 'sync_goals_completion' && <p className="text-xs text-muted-foreground">Sincronizar metas completadas</p>}
         {tool === 'create_minitask' && (
           <>
@@ -107,6 +119,7 @@ function isKnownTool(name: string): boolean {
     'delete_goal',
     'activate_goal',
     'validate_goal',
+    'apply_smarter_worksheet',
     'sync_goals_completion',
     'create_minitask',
     'update_minitask',

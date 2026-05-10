@@ -9,12 +9,35 @@ import {
   checkAndUpdateGoalCompletion,
 } from '@/services/goalService';
 import { findGoalsByUser, findGoalById } from '@/repositories/goalRepository';
+import { friendlyAgentToolMessage } from '@/lib/agentErrorMessage';
 import { findSmarterScoreByGoalId } from '@/repositories/smarterScoreRepository';
 import type { CreateGoalInput, UpdateGoalInput, UpdateMiniTaskInput, MiniTaskStatus } from '@smarter-app/shared';
 import type { AgentToolName } from '@/config/agentOpenAiTools';
+import {
+  formatSmarterWorksheetBlock,
+  mergeSmarterSectionIntoDescription,
+  type SmarterWorksheetAnswers,
+} from '@/features/agent/smarterWorksheetFormat';
 
 const GOAL_STATUS = new Set(['DRAFT', 'ACTIVE', 'COMPLETED', 'ARCHIVED']);
 const MINITASK_STATUS = new Set(['DRAFT', 'PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']);
+
+export type AgentToolResultExtras = {
+  kind: 'validate_goal_preview';
+  goalId: string;
+  suggestedMiniTasks: Array<{ title: string; description?: string }>;
+  feedback: string;
+};
+
+export interface AgentToolExecutionResult {
+  ok: boolean;
+  message: string;
+  extras?: AgentToolResultExtras;
+}
+
+function strArg(args: Record<string, unknown>, k: string): string {
+  return typeof args[k] === 'string' ? (args[k] as string).trim() : '';
+}
 
 /**
  * Si el modelo no pasa goalId o pasa uno inválido, usa la primera meta ACTIVE, luego DRAFT, luego cualquiera.
@@ -56,7 +79,7 @@ export async function executeAgentTool(
   name: AgentToolName,
   argsJson: string,
   opts?: { coachStrict?: boolean }
-): Promise<{ ok: boolean; message: string }> {
+): Promise<AgentToolExecutionResult> {
   let args: Record<string, unknown>;
   try {
     args = JSON.parse(argsJson) as Record<string, unknown>;
@@ -125,7 +148,23 @@ export async function executeAgentTool(
           const result = await validateGoalService(goalId, userId, { userId });
           const n = result.suggestedMiniTasks?.length ?? 0;
           const fb = (result.feedback || '').slice(0, 500);
-          return { ok: true, message: `Preview validacion: ${n} minitasks sugeridas. Feedback: ${fb}` };
+          const suggestedMiniTasks = (result.suggestedMiniTasks || [])
+            .slice(0, 16)
+            .map((x: { title?: string; description?: string | null }) => ({
+              title: String(x?.title || '').trim().slice(0, 200),
+              description: x?.description ? String(x.description).trim().slice(0, 500) : undefined,
+            }))
+            .filter((x) => x.title);
+          return {
+            ok: true,
+            message: `Preview validación: ${n} minitasks sugeridas. Feedback: ${fb}`,
+            extras: {
+              kind: 'validate_goal_preview',
+              goalId,
+              suggestedMiniTasks,
+              feedback: (result.feedback || '').slice(0, 1200),
+            },
+          };
         }
         const acceptedMiniTasks = Array.isArray(args.acceptedMiniTasks) ? args.acceptedMiniTasks : undefined;
         const hasConfirm =
@@ -148,6 +187,29 @@ export async function executeAgentTool(
         await Promise.allSettled(activeGoals.map((g) => checkAndUpdateGoalCompletion(g.id, userId)));
         return { ok: true, message: `Revisadas ${activeGoals.length} metas ACTIVE.` };
       }
+      case 'apply_smarter_worksheet': {
+        const goalId = typeof args.goalId === 'string' ? args.goalId.trim() : '';
+        if (!goalId) return { ok: false, message: 'goalId requerido' };
+        const g = await findGoalById(goalId, userId);
+        if (!g) return { ok: false, message: 'Meta no encontrada para tu usuario.' };
+        const answers: SmarterWorksheetAnswers = {
+          S: strArg(args, 'S'),
+          M: strArg(args, 'M'),
+          A: strArg(args, 'A'),
+          R: strArg(args, 'R'),
+          T: strArg(args, 'T'),
+          E_evaluable: strArg(args, 'E_evaluable'),
+          R_revisable: strArg(args, 'R_revisable'),
+        };
+        const block = formatSmarterWorksheetBlock(answers);
+        if (!block) return { ok: false, message: 'Indicá al menos un criterio SMARTER con texto.' };
+        const merged = mergeSmarterSectionIntoDescription(g.description, block);
+        await updateGoalService(goalId, userId, { description: merged });
+        return {
+          ok: true,
+          message: `Cuestionario SMARTER fusionado en la meta "${g.title}". Siguiente paso: validate_goal preview.`,
+        };
+      }
       case 'create_minitask': {
         const title = typeof args.title === 'string' ? args.title.trim() : '';
         if (!title) return { ok: false, message: 'title requerido' };
@@ -164,18 +226,34 @@ export async function executeAgentTool(
         const requested = typeof args.goalId === 'string' ? args.goalId : undefined;
         const resolved = await resolveGoalIdForNewMiniTask(userId, requested);
         if ('error' in resolved) return { ok: false, message: resolved.error };
-        const mt = await createMiniTaskService({
-          goalId: resolved.goalId,
-          title,
-          description: typeof args.description === 'string' ? args.description : undefined,
-          deadline: typeof args.deadline === 'string' ? args.deadline : undefined,
-          plannedHours: typeof args.plannedHours === 'number' ? args.plannedHours : undefined,
-          isSingleDayTask: typeof args.isSingleDayTask === 'boolean' ? args.isSingleDayTask : undefined,
-        });
-        return {
-          ok: true,
-          message: `Minitask creada id=${mt.id}: ${mt.title}${resolved.hint}`,
-        };
+        const goalOk = await findGoalById(resolved.goalId, userId);
+        if (!goalOk) {
+          return {
+            ok: false,
+            message: friendlyAgentToolMessage(
+              'Goal no encontrado: no hay meta válida para tu cuenta. Creá una meta en borrador o elegí una desde Metas.'
+            ),
+          };
+        }
+        try {
+          const mt = await createMiniTaskService({
+            goalId: resolved.goalId,
+            title,
+            description: typeof args.description === 'string' ? args.description : undefined,
+            deadline: typeof args.deadline === 'string' ? args.deadline : undefined,
+            plannedHours: typeof args.plannedHours === 'number' ? args.plannedHours : undefined,
+            isSingleDayTask: typeof args.isSingleDayTask === 'boolean' ? args.isSingleDayTask : undefined,
+          });
+          return {
+            ok: true,
+            message: `Minitask creada id=${mt.id}: ${mt.title}${resolved.hint}`,
+          };
+        } catch (e) {
+          return {
+            ok: false,
+            message: friendlyAgentToolMessage(e instanceof Error ? e.message : String(e)),
+          };
+        }
       }
       case 'update_minitask': {
         const miniTaskId = typeof args.miniTaskId === 'string' ? args.miniTaskId : '';

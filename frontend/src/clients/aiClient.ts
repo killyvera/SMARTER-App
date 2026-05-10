@@ -1061,4 +1061,136 @@ export async function queryMiniTaskCoach(
   }
 }
 
+const GLOBAL_AGENT_SYSTEM = `Eres el agente Smarter de la app de productividad. Hablas español, tono claro y breve.
+Tienes acceso a un contexto JSON con metas (goals), minitasks, estadísticas y pendientes de alarmas de hoy.
+Cuando el usuario pida cambiar datos (estado de tarea, notas del journal de hoy, checklist), usa las herramientas disponibles.
+No inventes IDs: solo usa miniTaskId que existan en el contexto. Si falta información, preguntá.
+Si no hay herramienta adecuada, explicá qué puede hacer el usuario en la app.`;
+
+export const GLOBAL_AGENT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
+  {
+    type: 'function',
+    function: {
+      name: 'update_minitask_status',
+      description:
+        'Actualiza el estado de una minitask del usuario. Solo si el usuario lo pide explícitamente.',
+      parameters: {
+        type: 'object',
+        properties: {
+          miniTaskId: { type: 'string', description: 'ID de la minitask' },
+          status: {
+            type: 'string',
+            enum: ['DRAFT', 'PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
+          },
+        },
+        required: ['miniTaskId', 'status'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'upsert_journal_today',
+      description:
+        'Crea o actualiza la entrada de journal del día de hoy para una minitask (notas, progreso, checklist, ánimo, minutos).',
+      parameters: {
+        type: 'object',
+        properties: {
+          miniTaskId: { type: 'string' },
+          notes: { type: 'string' },
+          progressValue: { type: 'number' },
+          progressUnit: { type: 'string' },
+          checklistCompleted: { type: 'boolean' },
+          mood: { type: 'string', enum: ['positivo', 'neutral', 'negativo'] },
+          timeSpent: { type: 'integer', description: 'Minutos dedicados' },
+        },
+        required: ['miniTaskId'],
+      },
+    },
+  },
+];
+
+export type GlobalAgentChatRole = 'user' | 'assistant' | 'system';
+
+export interface GlobalAgentClientMessage {
+  role: GlobalAgentChatRole;
+  content: string;
+}
+
+export type GlobalAgentModelOutcome =
+  | { kind: 'text'; content: string }
+  | {
+      kind: 'tool_calls';
+      content: string | null;
+      toolCalls: Array<{ id: string; name: string; arguments: string }>;
+    };
+
+const ALLOWED_AGENT_TOOLS = new Set(['update_minitask_status', 'upsert_journal_today']);
+
+export async function runGlobalAgentTurn(
+  userId: string,
+  contextBlock: string,
+  messages: GlobalAgentClientMessage[],
+  ip?: string
+): Promise<GlobalAgentModelOutcome> {
+  const requestInput = { messages, contextBlock };
+
+  return protectedAICall<GlobalAgentModelOutcome>(
+    'globalAgent',
+    userId,
+    requestInput,
+    async (signal) => {
+      const client = getClient();
+      const model = getModel();
+
+      const apiMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+        {
+          role: 'system',
+          content: `${GLOBAL_AGENT_SYSTEM}\n\n${contextBlock}`,
+        },
+        ...messages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
+      ];
+
+      const response = await client.chat.completions.create(
+        {
+          model,
+          messages: apiMessages,
+          tools: GLOBAL_AGENT_TOOLS,
+          tool_choice: 'auto',
+          temperature: 0.35,
+        },
+        { signal }
+      );
+
+      const msg = response.choices[0]?.message;
+      const toolCalls = msg?.tool_calls;
+
+      if (toolCalls?.length) {
+        const mapped = toolCalls
+          .filter((tc): tc is typeof tc & { type: 'function' } => tc.type === 'function')
+          .map((tc) => ({
+            id: tc.id,
+            name: tc.function.name,
+            arguments: tc.function.arguments || '{}',
+          }))
+          .filter((tc) => ALLOWED_AGENT_TOOLS.has(tc.name));
+
+        if (mapped.length > 0) {
+          return {
+            kind: 'tool_calls',
+            content: msg?.content ?? null,
+            toolCalls: mapped,
+          };
+        }
+      }
+
+      const text = (msg?.content || '').trim() || 'No pude generar una respuesta.';
+      return { kind: 'text', content: text };
+    },
+    ip
+  );
+}
 

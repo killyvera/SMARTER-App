@@ -22,6 +22,7 @@ const OPERATION_TTL: Record<string, number> = {
   unlockMiniTask: 30000, // 30 segundos
   queryCoach: 10000, // 10 segundos (queries más dinámicas)
   validateMiniTask: 30000, // 30 segundos
+  globalAgent: 0, // sin cache: conversación variable
 };
 
 // Limpieza periódica de cache expirado
@@ -89,8 +90,11 @@ export async function cacheResult<T>(
   result: T
 ): Promise<void> {
   const hash = createRequestHash(operation, userId, input);
-  const ttl = OPERATION_TTL[operation] || 30000; // Default 30 segundos
-  
+  const ttl = OPERATION_TTL[operation] ?? 30000; // Default 30 segundos
+  if (ttl <= 0) {
+    return;
+  }
+
   requestCache.set(hash, {
     result,
     timestamp: Date.now(),
@@ -140,4 +144,6 @@ export function getCacheStats(): {
     operations,
   };
 }
+
+
 

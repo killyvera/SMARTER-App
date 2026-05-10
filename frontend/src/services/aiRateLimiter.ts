@@ -21,6 +21,7 @@ const OPERATION_LIMITS: Record<string, RateLimitConfig> = {
   validateGoal: { maxRequests: 5, windowMs: 60000 }, // 5 por minuto
   unlockMiniTask: { maxRequests: 3, windowMs: 60000 }, // 3 por minuto
   queryCoach: { maxRequests: 10, windowMs: 60000 }, // 10 por minuto
+  globalAgent: { maxRequests: 20, windowMs: 60000 },
 };
 
 // Límites globales
@@ -246,4 +247,6 @@ export class RateLimitError extends Error {
     this.name = 'RateLimitError';
   }
 }
+
+
 

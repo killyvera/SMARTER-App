@@ -16,6 +16,7 @@ const OPERATION_TIMEOUTS: Record<string, number> = {
   unlockMiniTask: 45000, // 45 segundos
   queryCoach: 20000, // 20 segundos
   validateMiniTask: 30000, // 30 segundos
+  globalAgent: 60000,
 };
 
 /**
@@ -89,4 +90,6 @@ export class TimeoutError extends Error {
     this.name = 'TimeoutError';
   }
 }
+
+
 

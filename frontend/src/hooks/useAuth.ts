@@ -72,7 +72,7 @@ export function useAuth() {
         isAuthenticated: true,
         isLoading: false,
       });
-      router.push('/goals');
+      router.push('/');
     }
   }, [router]);
 

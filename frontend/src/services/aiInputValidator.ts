@@ -80,6 +80,29 @@ const VALIDATION_RULES: Record<string, ValidationRules> = {
       return false;
     },
   },
+  globalAgent: {
+    maxLength: 100000,
+    requiredFields: ['messages', 'contextBlock'],
+    fieldTypes: {
+      messages: 'array',
+      contextBlock: 'string',
+    },
+    customValidator: (input) => {
+      if (!Array.isArray(input.messages) || input.messages.length === 0) {
+        return false;
+      }
+      if (input.messages.length > 40) return false;
+      for (const m of input.messages) {
+        if (!m || typeof m !== 'object') return false;
+        if (m.role !== 'user' && m.role !== 'assistant' && m.role !== 'system') return false;
+        if (typeof m.content !== 'string' || m.content.length > 16000) return false;
+      }
+      if (typeof input.contextBlock !== 'string' || input.contextBlock.length > 80000) {
+        return false;
+      }
+      return true;
+    },
+  },
 };
 
 /**

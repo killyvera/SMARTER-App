@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  /** Preferente para firmar tokens de aprobación de herramientas del agente; si falta, se usa DATABASE_URL en servidor. */
   JWT_SECRET: z.string().min(32).optional(),
   DATABASE_URL: z.string(),
   // OpenAI API (default)

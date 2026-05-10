@@ -1,5 +1,5 @@
 import { AuthGuard } from '@/components/AuthGuard';
-import { AppLayout } from '@/components/layout/AppLayout';
+import { AgentAppLayout } from '@/components/layout/AgentAppLayout';
 import { UpdateBanner } from '@/components/UpdateBanner';
 
 export default function AuthenticatedLayout({
@@ -9,7 +9,7 @@ export default function AuthenticatedLayout({
 }) {
   return (
     <AuthGuard>
-      <AppLayout>{children}</AppLayout>
+      <AgentAppLayout>{children}</AgentAppLayout>
       <UpdateBanner />
     </AuthGuard>
   );

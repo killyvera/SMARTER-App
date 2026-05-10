@@ -8,11 +8,24 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Loader2, Send } from 'lucide-react';
+import { Loader2, MessageSquarePlus, Send, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { sanitizeAgentApiErrorForClient } from '@/lib/agentErrorMessage';
 import { ProposalToolPreview } from '@/features/agent/components/proposals/ProposalToolPreview';
 import { AgentTodayPanel } from '@/features/agent/components/AgentTodayPanel';
+import {
+  createInitialSessionsIndex,
+  deriveSessionTitleFromMessages,
+  loadSessionMessagesRaw,
+  loadSessionsIndex,
+  migrateLegacyChatToSessions,
+  newSessionId,
+  removeSessionMessages,
+  saveSessionMessagesRaw,
+  saveSessionsIndex,
+  type SessionsIndex,
+} from '@/features/agent/agentChatSessions';
+import { AGENT_CHAT_SHORTCUTS } from '@/features/agent/agentChatShortcuts';
 import Link from 'next/link';
 
 type UiProposal = {
@@ -52,13 +65,6 @@ type AgentTurnResponse =
 
 function id() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
-const LEGACY_STORAGE_PREFIX = 'smarter-agent-chat-v1:';
-const STORAGE_PREFIX = 'smarter-agent-chat-v2:';
-
-function storageKey(userId: string) {
-  return `${STORAGE_PREFIX}${userId}`;
 }
 
 function migrateLegacyMessages(raw: unknown): UiMsg[] | null {
@@ -122,6 +128,8 @@ export function AgentHomePage() {
   const queryClient = useQueryClient();
   const coachModeId = useId();
   const coachStrictId = useId();
+  const [sessionsIndex, setSessionsIndex] = useState<SessionsIndex>({ activeSessionId: '', sessions: [] });
+  const [activeSessionId, setActiveSessionId] = useState('');
   const [messages, setMessages] = useState<UiMsg[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -134,16 +142,23 @@ export function AgentHomePage() {
 
   useEffect(() => {
     if (!userId) return;
-    try {
-      let raw = localStorage.getItem(storageKey(userId));
-      if (!raw) raw = localStorage.getItem(`${LEGACY_STORAGE_PREFIX}${userId}`);
-      if (raw) {
+    let idx = loadSessionsIndex(userId);
+    if (!idx) idx = migrateLegacyChatToSessions(userId);
+    if (!idx) idx = createInitialSessionsIndex();
+    saveSessionsIndex(userId, idx);
+    setSessionsIndex(idx);
+    setActiveSessionId(idx.activeSessionId);
+    const raw = loadSessionMessagesRaw(userId, idx.activeSessionId);
+    if (raw) {
+      try {
         const parsed = JSON.parse(raw) as unknown;
         const migrated = migrateLegacyMessages(parsed);
-        if (migrated) setMessages(migrated);
+        setMessages(migrated ?? []);
+      } catch {
+        setMessages([]);
       }
-    } catch {
-      /* ignore */
+    } else {
+      setMessages([]);
     }
     try {
       const coachRaw = localStorage.getItem(`smarter-agent-coach:${userId}`);
@@ -168,13 +183,26 @@ export function AgentHomePage() {
   }, [userId, booted, coachMode, coachStrict]);
 
   useEffect(() => {
-    if (!userId || !booted) return;
+    if (!userId || !booted || !activeSessionId) return;
     try {
-      localStorage.setItem(storageKey(userId), JSON.stringify(messages));
+      saveSessionMessagesRaw(userId, activeSessionId, JSON.stringify(messages));
+      const title = deriveSessionTitleFromMessages(messages);
+      setSessionsIndex((prev) => {
+        if (!prev.sessions.length) return prev;
+        const next: SessionsIndex = {
+          ...prev,
+          activeSessionId,
+          sessions: prev.sessions.map((s) =>
+            s.id === activeSessionId ? { ...s, title, updatedAt: Date.now() } : s
+          ),
+        };
+        saveSessionsIndex(userId, next);
+        return next;
+      });
     } catch {
       /* ignore */
     }
-  }, [messages, userId, booted]);
+  }, [messages, userId, booted, activeSessionId]);
 
   const injectContextSummary = useCallback(async () => {
     try {
@@ -247,12 +275,84 @@ export function AgentHomePage() {
 
   const hasOpenProposals = useMemo(() => messages.some((m) => m.proposals && m.proposals.length > 0), [messages]);
 
-  const sendUserMessage = async () => {
-    const text = input.trim();
+  const orderedSessions = useMemo(
+    () => [...sessionsIndex.sessions].sort((a, b) => b.updatedAt - a.updatedAt),
+    [sessionsIndex.sessions]
+  );
+
+  const switchToSession = useCallback(
+    (nextId: string) => {
+      if (!userId || nextId === activeSessionId) return;
+      saveSessionMessagesRaw(userId, activeSessionId, JSON.stringify(messages));
+      const nextIdx: SessionsIndex = { ...sessionsIndex, activeSessionId: nextId };
+      saveSessionsIndex(userId, nextIdx);
+      setSessionsIndex(nextIdx);
+      setActiveSessionId(nextId);
+      const raw = loadSessionMessagesRaw(userId, nextId);
+      if (raw) {
+        try {
+          const migrated = migrateLegacyMessages(JSON.parse(raw) as unknown);
+          setMessages(migrated ?? []);
+        } catch {
+          setMessages([]);
+        }
+      } else {
+        setMessages([]);
+      }
+    },
+    [userId, activeSessionId, messages, sessionsIndex]
+  );
+
+  const startNewChat = useCallback(() => {
+    if (!userId || !activeSessionId) return;
+    saveSessionMessagesRaw(userId, activeSessionId, JSON.stringify(messages));
+    const sid = newSessionId();
+    const nextIdx: SessionsIndex = {
+      activeSessionId: sid,
+      sessions: [{ id: sid, title: 'Nuevo chat', updatedAt: Date.now() }, ...sessionsIndex.sessions],
+    };
+    saveSessionsIndex(userId, nextIdx);
+    setSessionsIndex(nextIdx);
+    setActiveSessionId(sid);
+    setMessages([]);
+    queueMicrotask(() => void injectContextSummary());
+  }, [userId, activeSessionId, messages, sessionsIndex, injectContextSummary]);
+
+  const removeCurrentSession = useCallback(() => {
+    if (!userId || !activeSessionId) return;
+    if (sessionsIndex.sessions.length <= 1) {
+      setMessages([]);
+      queueMicrotask(() => void injectContextSummary());
+      return;
+    }
+    if (typeof window !== 'undefined' && !window.confirm('¿Eliminar este chat en este dispositivo?')) return;
+    removeSessionMessages(userId, activeSessionId);
+    const rest = sessionsIndex.sessions.filter((s) => s.id !== activeSessionId);
+    const nextActive = rest[0].id;
+    const nextIdx: SessionsIndex = { activeSessionId: nextActive, sessions: rest };
+    saveSessionsIndex(userId, nextIdx);
+    setSessionsIndex(nextIdx);
+    setActiveSessionId(nextActive);
+    const raw = loadSessionMessagesRaw(userId, nextActive);
+    if (raw) {
+      try {
+        const migrated = migrateLegacyMessages(JSON.parse(raw) as unknown);
+        setMessages(migrated ?? []);
+      } catch {
+        setMessages([]);
+      }
+    } else {
+      setMessages([]);
+    }
+  }, [userId, activeSessionId, sessionsIndex]);
+
+  const sendUserMessage = async (presetText?: string) => {
+    const rawInput = presetText ?? input;
+    const text = rawInput.trim();
     if (!text || loading || hasOpenProposals) return;
+    if (presetText === undefined) setInput('');
 
     const userMsg: UiMsg = { id: id(), role: 'user', content: text };
-    setInput('');
     setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
 
@@ -352,6 +452,46 @@ export function AgentHomePage() {
   return (
     <div className="mx-auto flex w-full max-w-lg flex-1 flex-col min-h-0 pb-2 md:max-w-xl">
       <AgentTodayPanel />
+      <div className="mx-3 flex flex-wrap items-center gap-2 border-b border-border/50 py-2">
+        <label htmlFor="agent-session-select" className="sr-only">
+          Conversación
+        </label>
+        <select
+          id="agent-session-select"
+          value={activeSessionId}
+          onChange={(e) => switchToSession(e.target.value)}
+          disabled={!booted || orderedSessions.length === 0}
+          className="h-8 min-w-0 max-w-[min(100%,14rem)] flex-1 rounded-md border border-input bg-background px-2 text-xs"
+        >
+          {orderedSessions.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.title || 'Chat'}
+            </option>
+          ))}
+        </select>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 shrink-0 gap-1 px-2 text-xs"
+          disabled={!booted || loading}
+          onClick={() => startNewChat()}
+        >
+          <MessageSquarePlus className="h-3.5 w-3.5" aria-hidden />
+          Nuevo chat
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="h-8 shrink-0 gap-1 px-2 text-xs text-destructive hover:text-destructive"
+          disabled={!booted || loading}
+          onClick={() => removeCurrentSession()}
+        >
+          <Trash2 className="h-3.5 w-3.5" aria-hidden />
+          Eliminar
+        </Button>
+      </div>
       <div className="mx-3 flex flex-wrap items-center gap-x-5 gap-y-2 border-b border-border/50 py-2">
         <div className="flex items-center gap-2">
           <Switch id={coachModeId} checked={coachMode} onCheckedChange={setCoachMode} />
@@ -444,6 +584,25 @@ export function AgentHomePage() {
           >
             <Send className="h-4 w-4" />
           </Button>
+        </div>
+        <p className="text-[10px] text-muted-foreground px-0.5">Plantillas (un toque para enviar al agente)</p>
+        <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2">
+          {AGENT_CHAT_SHORTCUTS.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              disabled={loading || hasOpenProposals}
+              onClick={() => void sendUserMessage(s.prompt)}
+              className={cn(
+                'rounded-lg border border-border bg-card px-2.5 py-2 text-left transition-colors',
+                'hover:bg-accent/60 disabled:opacity-50 disabled:pointer-events-none',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+              )}
+            >
+              <span className="block text-xs font-medium text-foreground">{s.title}</span>
+              <span className="mt-0.5 block text-[10px] text-muted-foreground leading-snug">{s.hint}</span>
+            </button>
+          ))}
         </div>
       </div>
     </div>

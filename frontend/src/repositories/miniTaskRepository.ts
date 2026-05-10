@@ -544,6 +544,17 @@ export async function findMiniTasksByUser(userId: string): Promise<MiniTask[]> {
   }
 }
 
+export async function deleteMiniTaskById(miniTaskId: string, userId: string): Promise<void> {
+  const task = await prisma.miniTask.findFirst({
+    where: { id: miniTaskId },
+    include: { goal: { select: { userId: true } } },
+  });
+  if (!task || task.goal.userId !== userId) {
+    throw new Error('MiniTask no encontrada o no autorizado');
+  }
+  await prisma.miniTask.delete({ where: { id: miniTaskId } });
+}
+
 export async function updateMiniTask(
   id: string,
   data: {

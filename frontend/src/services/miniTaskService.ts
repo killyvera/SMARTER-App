@@ -5,6 +5,7 @@ import {
   findMiniTasksByStatus,
   updateMiniTask,
   createMiniTaskPlugin,
+  deleteMiniTaskById,
 } from '@/repositories/miniTaskRepository';
 import { createMiniTaskScore } from '@/repositories/miniTaskScoreRepository';
 import { validateMiniTaskSmart, unlockMiniTask } from '@/clients/aiClient';
@@ -242,6 +243,10 @@ export async function updateMiniTaskService(
   }
   
   return updatedMiniTask;
+}
+
+export async function deleteMiniTaskService(miniTaskId: string, userId: string) {
+  await deleteMiniTaskById(miniTaskId, userId);
 }
 
 /**

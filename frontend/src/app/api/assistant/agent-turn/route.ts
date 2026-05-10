@@ -5,12 +5,11 @@ import { getClientIP } from '@/lib/getClientIP';
 import { buildGlobalSmarterContext, contextToPromptBlock } from '@/services/globalSmarterContextService';
 import { runGlobalAgentTurn } from '@/clients/aiClient';
 import { mintToolApprovalToken, defaultApprovalWindow, verifyToolApprovalToken } from '@/lib/agentToolApproval';
-import { executeAgentTool, type AgentToolName } from '@/services/agentToolExecutor';
+import { executeAgentTool } from '@/services/agentToolExecutor';
+import { AGENT_TOOL_NAME_SET, type AgentToolName } from '@/config/agentOpenAiTools';
 import { logApiRequest, logApiError } from '@/lib/api-logger';
 
 export const dynamic = 'force-dynamic';
-
-const ALLOWED_TOOLS = new Set<AgentToolName>(['update_minitask_status', 'upsert_journal_today']);
 
 export async function POST(request: NextRequest) {
   const start = Date.now();
@@ -30,7 +29,7 @@ export async function POST(request: NextRequest) {
           results.push({ approvalToken: ex.approvalToken.slice(0, 12) + '…', ok: false, message: 'Token inválido o expirado' });
           continue;
         }
-        if (!ALLOWED_TOOLS.has(payload.name as AgentToolName)) {
+        if (!AGENT_TOOL_NAME_SET.has(payload.name)) {
           results.push({ approvalToken: payload.toolCallId, ok: false, message: 'Herramienta no permitida' });
           continue;
         }
@@ -100,12 +99,19 @@ export async function POST(request: NextRequest) {
 function summarizeTool(name: string, argsJson: string): string {
   try {
     const a = JSON.parse(argsJson) as Record<string, unknown>;
-    if (name === 'update_minitask_status') {
-      return `Cambiar estado de minitask → ${String(a.status ?? '')}`;
-    }
+    if (name === 'create_goal') return `Crear meta: ${String(a.title ?? '').slice(0, 40)}`;
+    if (name === 'update_goal') return `Actualizar meta ${String(a.goalId ?? '').slice(0, 8)}…`;
+    if (name === 'delete_goal') return `Eliminar meta ${String(a.goalId ?? '').slice(0, 8)}…`;
+    if (name === 'activate_goal') return `Activar meta ${String(a.goalId ?? '').slice(0, 8)}…`;
+    if (name === 'validate_goal') return `Validar meta (${String(a.phase ?? '')})`;
+    if (name === 'sync_goals_completion') return 'Sincronizar completitud de metas';
+    if (name === 'create_minitask') return `Crear minitask: ${String(a.title ?? '').slice(0, 40)}`;
+    if (name === 'update_minitask') return `Actualizar minitask ${String(a.miniTaskId ?? '').slice(0, 8)}…`;
+    if (name === 'delete_minitask') return `Eliminar minitask ${String(a.miniTaskId ?? '').slice(0, 8)}…`;
     if (name === 'upsert_journal_today') {
       return `Guardar journal de hoy (${String(a.miniTaskId ?? '').slice(0, 8)}…)`;
     }
+    if (name === 'unlock_minitask') return `Desbloquear minitask ${String(a.miniTaskId ?? '').slice(0, 8)}…`;
   } catch {
     /* ignore */
   }

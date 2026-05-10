@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BookOpen, CheckCircle2, Target, TrendingUp, Clock, RefreshCw, Eye, ChevronDown, ChevronUp } from 'lucide-react';
@@ -224,6 +225,11 @@ export default function SmarterDetailPage() {
         </h1>
         <p className="text-muted-foreground text-sm sm:text-base md:text-lg">
           Una guía detallada sobre el método SMARTER para establecer y alcanzar objetivos efectivos
+        </p>
+        <p className="text-sm">
+          <Link href="/faq" className="text-primary font-medium hover:underline">
+            Ver también el FAQ SMARTER (preguntas frecuentes)
+          </Link>
         </p>
       </div>
 

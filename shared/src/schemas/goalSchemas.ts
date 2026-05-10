@@ -16,7 +16,9 @@ export const createGoalSchema = z.object({
   isSingleDayGoal: z.boolean().optional(),
 });
 
-export const updateGoalSchema = createGoalSchema.partial();
+export const updateGoalSchema = createGoalSchema.partial().extend({
+  status: goalStatusSchema.optional(),
+});
 
 export const smarterScoreSchema = z.object({
   specific: z.number().min(0).max(100),

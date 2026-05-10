@@ -4,6 +4,7 @@ import {
   findGoalsByUser,
   updateGoal,
   getGoalSnapshot,
+  deleteGoal as deleteGoalRecord,
 } from '@/repositories/goalRepository';
 import { createSmarterScore, findSmarterScoreByGoalId } from '@/repositories/smarterScoreRepository';
 import { createSuggestedMiniTask } from '@/repositories/suggestedMiniTaskRepository';
@@ -291,7 +292,16 @@ export async function updateGoalService(
     deadline,
     plannedHours: input.plannedHours,
     isSingleDayGoal: input.isSingleDayGoal,
+    status: input.status,
   });
+}
+
+export async function deleteGoalService(goalId: string, userId: string) {
+  const goal = await findGoalById(goalId, userId);
+  if (!goal) {
+    throw new Error('Goal no encontrado');
+  }
+  await deleteGoalRecord(goalId, userId);
 }
 
 export async function createReadjustmentService(

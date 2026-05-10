@@ -81,7 +81,7 @@ const VALIDATION_RULES: Record<string, ValidationRules> = {
     },
   },
   globalAgent: {
-    maxLength: 100000,
+    maxLength: 200000,
     requiredFields: ['messages', 'contextBlock'],
     fieldTypes: {
       messages: 'array',

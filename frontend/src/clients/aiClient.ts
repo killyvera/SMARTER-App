@@ -15,6 +15,8 @@ import { checkLoop, LoopDetectionError } from '@/services/aiLoopDetector';
 import { enqueue } from '@/services/aiRequestQueue';
 import { trackRequest } from '@/services/aiRequestTracker';
 import { createHash } from 'crypto';
+import { GLOBAL_AGENT_TOOLS, AGENT_TOOL_NAME_SET } from '@/config/agentOpenAiTools';
+import { AGENT_API_CATALOG } from '@/config/agentApiCatalog';
 
 export interface SuggestedMiniTask {
   title: string;
@@ -1062,53 +1064,10 @@ export async function queryMiniTaskCoach(
 }
 
 const GLOBAL_AGENT_SYSTEM = `Eres el agente Smarter de la app de productividad. Hablas español, tono claro y breve.
-Tienes acceso a un contexto JSON con metas (goals), minitasks, estadísticas y pendientes de alarmas de hoy.
-Cuando el usuario pida cambiar datos (estado de tarea, notas del journal de hoy, checklist), usa las herramientas disponibles.
-No inventes IDs: solo usa miniTaskId que existan en el contexto. Si falta información, preguntá.
-Si no hay herramienta adecuada, explicá qué puede hacer el usuario en la app.`;
-
-export const GLOBAL_AGENT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = [
-  {
-    type: 'function',
-    function: {
-      name: 'update_minitask_status',
-      description:
-        'Actualiza el estado de una minitask del usuario. Solo si el usuario lo pide explícitamente.',
-      parameters: {
-        type: 'object',
-        properties: {
-          miniTaskId: { type: 'string', description: 'ID de la minitask' },
-          status: {
-            type: 'string',
-            enum: ['DRAFT', 'PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'],
-          },
-        },
-        required: ['miniTaskId', 'status'],
-      },
-    },
-  },
-  {
-    type: 'function',
-    function: {
-      name: 'upsert_journal_today',
-      description:
-        'Crea o actualiza la entrada de journal del día de hoy para una minitask (notas, progreso, checklist, ánimo, minutos).',
-      parameters: {
-        type: 'object',
-        properties: {
-          miniTaskId: { type: 'string' },
-          notes: { type: 'string' },
-          progressValue: { type: 'number' },
-          progressUnit: { type: 'string' },
-          checklistCompleted: { type: 'boolean' },
-          mood: { type: 'string', enum: ['positivo', 'neutral', 'negativo'] },
-          timeSpent: { type: 'integer', description: 'Minutos dedicados' },
-        },
-        required: ['miniTaskId'],
-      },
-    },
-  },
-];
+Debajo tienes un catalogo de rutas REST internas (/api) y un snapshot JSON del usuario (metas, minitasks, stats, alarmas).
+Para crear, editar, borrar o validar datos del usuario debes usar las herramientas (function calls); no digas que no podes si existe la herramienta adecuada.
+Usa siempre goalId y miniTaskId que aparezcan en el snapshot. Si falta un dato, preguntá antes de inventar.
+Para activar una meta (activate_goal) el usuario debe haber pasado validate_goal en fase confirm y cumplir scores SMARTER.`;
 
 export type GlobalAgentChatRole = 'user' | 'assistant' | 'system';
 
@@ -1124,8 +1083,6 @@ export type GlobalAgentModelOutcome =
       content: string | null;
       toolCalls: Array<{ id: string; name: string; arguments: string }>;
     };
-
-const ALLOWED_AGENT_TOOLS = new Set(['update_minitask_status', 'upsert_journal_today']);
 
 export async function runGlobalAgentTurn(
   userId: string,
@@ -1146,7 +1103,7 @@ export async function runGlobalAgentTurn(
       const apiMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
         {
           role: 'system',
-          content: `${GLOBAL_AGENT_SYSTEM}\n\n${contextBlock}`,
+          content: `${GLOBAL_AGENT_SYSTEM}\n\n${AGENT_API_CATALOG}\n\n${contextBlock}`,
         },
         ...messages.map((m) => ({
           role: m.role,
@@ -1176,7 +1133,7 @@ export async function runGlobalAgentTurn(
             name: tc.function.name,
             arguments: tc.function.arguments || '{}',
           }))
-          .filter((tc) => ALLOWED_AGENT_TOOLS.has(tc.name));
+          .filter((tc) => AGENT_TOOL_NAME_SET.has(tc.name));
 
         if (mapped.length > 0) {
           return {

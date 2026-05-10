@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionItem } from '@/components/ui/accordion';
@@ -316,6 +317,11 @@ Lo importante es que puedas comparar tu estado actual con tu estado objetivo.`,
           <p className="text-sm sm:text-base text-muted-foreground">
             Preguntas frecuentes sobre el método SMARTER organizadas por componente
           </p>
+          <p className="text-sm pt-1">
+            <Link href="/smarter" className="text-primary font-medium hover:underline">
+              Guía metodológica completa (SMARTER)
+            </Link>
+          </p>
         </div>
       </div>
 
@@ -390,13 +396,13 @@ Lo importante es que puedas comparar tu estado actual con tu estado objetivo.`,
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <a
+          <Link
             href="/smarter"
             className="text-primary hover:underline font-medium inline-flex items-center gap-2"
           >
             Ver guía completa SMARTER
             <span>→</span>
-          </a>
+          </Link>
         </CardContent>
       </Card>
     </div>

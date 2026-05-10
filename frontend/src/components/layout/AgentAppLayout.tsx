@@ -1,19 +1,26 @@
 'use client';
 
 import { AgentHeader } from './AgentHeader';
+import { AgentNavDrawer } from './AgentNavDrawer';
 
 interface AgentAppLayoutProps {
   children: React.ReactNode;
 }
 
 /**
- * Shell mobile-first: sin sidebar legacy; solo header compacto + contenido.
+ * Shell mobile-first: header + drawer (icono app) con FAQ / SMARTER / rutas útiles.
+ * En md+ el menú queda fijo a la izquierda; en móvil se abre encima del contenido.
  */
 export function AgentAppLayout({ children }: AgentAppLayoutProps) {
   return (
-    <div className="min-h-dvh bg-background flex flex-col w-full overflow-x-hidden">
+    <div className="flex min-h-dvh flex-col bg-background w-full overflow-x-hidden">
       <AgentHeader />
-      <main className="flex-1 flex flex-col min-h-0 w-full max-w-lg mx-auto md:max-w-xl">{children}</main>
+      <div className="flex flex-1 min-h-0 min-w-0 flex-col md:flex-row">
+        <AgentNavDrawer />
+        <main className="flex flex-1 min-h-0 min-w-0 flex-col max-w-lg mx-auto w-full md:max-w-none md:mx-0 md:px-4 md:py-2">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

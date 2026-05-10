@@ -232,7 +232,7 @@ export function AgentHomePage() {
   };
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 pb-2">
+    <div className="mx-auto flex w-full max-w-lg flex-1 flex-col min-h-0 pb-2 md:max-w-xl">
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
         {messages.map((m) => (
           <div key={m.id} className={cn('flex', m.role === 'user' ? 'justify-end' : 'justify-start')}>

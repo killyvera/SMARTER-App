@@ -8,6 +8,7 @@ import { mintToolApprovalToken, defaultApprovalWindow, verifyToolApprovalToken }
 import { executeAgentTool } from '@/services/agentToolExecutor';
 import { AGENT_TOOL_NAME_SET, type AgentToolName } from '@/config/agentOpenAiTools';
 import { logApiRequest, logApiError } from '@/lib/api-logger';
+import { sanitizeAgentApiErrorForClient } from '@/lib/agentErrorMessage';
 
 export const dynamic = 'force-dynamic';
 
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
     logApiError('POST', '/api/assistant/agent-turn', error);
     const msg = error instanceof Error ? error.message : 'Error del agente';
     const status = msg.includes('Token') || msg.includes('autenticación') || msg.includes('No autorizado') ? 401 : 400;
-    return NextResponse.json({ error: msg }, { status });
+    return NextResponse.json({ error: sanitizeAgentApiErrorForClient(msg) }, { status });
   }
 }
 

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { sanitizeAgentApiErrorForClient } from '@/lib/agentErrorMessage';
 
 type UiProposal = {
   toolCallId: string;
@@ -177,12 +178,13 @@ export function AgentHomePage() {
         ]);
       }
     } catch (e) {
+      const raw = e instanceof Error ? e.message : 'Error al contactar al agente';
       setMessages((prev) => [
         ...prev,
         {
           id: id(),
           role: 'system',
-          content: e instanceof Error ? e.message : 'Error al contactar al agente',
+          content: sanitizeAgentApiErrorForClient(raw),
         },
       ]);
     } finally {
@@ -218,12 +220,13 @@ export function AgentHomePage() {
         );
       }
     } catch (e) {
+      const raw = e instanceof Error ? e.message : 'Error al ejecutar acciones';
       setMessages((prev) => [
         ...prev,
         {
           id: id(),
           role: 'system',
-          content: e instanceof Error ? e.message : 'Error al ejecutar acciones',
+          content: sanitizeAgentApiErrorForClient(raw),
         },
       ]);
     } finally {

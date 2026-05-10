@@ -134,18 +134,19 @@ export const GLOBAL_AGENT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = 
     type: 'function',
     function: {
       name: 'create_minitask',
-      description: 'Crea una minitask bajo una meta. Equivale a POST /api/minitasks.',
+      description:
+        'Crea una minitask. goalId opcional: si falta o es invalido, el servidor usa la primera meta ACTIVE, si no DRAFT, si no cualquiera. Si no hay metas, falla hasta que exista create_goal.',
       parameters: {
         type: 'object',
         properties: {
-          goalId: { type: 'string' },
+          goalId: { type: 'string', description: 'Opcional. ID exacto del snapshot; si no, se infiere.' },
           title: { type: 'string' },
           description: { type: 'string' },
           deadline: { type: 'string' },
           plannedHours: { type: 'number' },
           isSingleDayTask: { type: 'boolean' },
         },
-        required: ['goalId', 'title'],
+        required: ['title'],
       },
     },
   },

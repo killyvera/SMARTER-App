@@ -15,6 +15,41 @@ import type { AgentToolName } from '@/config/agentOpenAiTools';
 const GOAL_STATUS = new Set(['DRAFT', 'ACTIVE', 'COMPLETED', 'ARCHIVED']);
 const MINITASK_STATUS = new Set(['DRAFT', 'PENDING', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']);
 
+/**
+ * Si el modelo no pasa goalId o pasa uno inválido, usa la primera meta ACTIVE, luego DRAFT, luego cualquiera.
+ */
+async function resolveGoalIdForNewMiniTask(
+  userId: string,
+  requestedGoalId: string | undefined
+): Promise<{ goalId: string; hint: string } | { error: string }> {
+  const trimmed = requestedGoalId?.trim();
+  if (trimmed) {
+    const g = await findGoalById(trimmed, userId);
+    if (g) return { goalId: trimmed, hint: '' };
+  }
+
+  let list = await findGoalsByUser(userId, { status: 'ACTIVE' });
+  if (list.length > 0) {
+    const g = list[0];
+    return { goalId: g.id, hint: ` (asignada a tu meta activa: "${g.title}")` };
+  }
+  list = await findGoalsByUser(userId, { status: 'DRAFT' });
+  if (list.length > 0) {
+    const g = list[0];
+    return { goalId: g.id, hint: ` (asignada a meta en borrador: "${g.title}")` };
+  }
+  const all = await findGoalsByUser(userId);
+  if (all.length > 0) {
+    const g = all[0];
+    return { goalId: g.id, hint: ` (asignada a "${g.title}" — ${g.status})` };
+  }
+
+  return {
+    error:
+      'No tenés ninguna meta. Creá una primero (pedime "crear meta …" o usá Metas en el menú) y después la tarea.',
+  };
+}
+
 export async function executeAgentTool(
   userId: string,
   name: AgentToolName,
@@ -102,20 +137,23 @@ export async function executeAgentTool(
         return { ok: true, message: `Revisadas ${activeGoals.length} metas ACTIVE.` };
       }
       case 'create_minitask': {
-        const goalId = typeof args.goalId === 'string' ? args.goalId : '';
         const title = typeof args.title === 'string' ? args.title.trim() : '';
-        if (!goalId || !title) return { ok: false, message: 'goalId y title requeridos' };
-        const goal = await findGoalById(goalId, userId);
-        if (!goal) return { ok: false, message: 'Meta no encontrada o no pertenece al usuario' };
+        if (!title) return { ok: false, message: 'title requerido' };
+        const requested = typeof args.goalId === 'string' ? args.goalId : undefined;
+        const resolved = await resolveGoalIdForNewMiniTask(userId, requested);
+        if ('error' in resolved) return { ok: false, message: resolved.error };
         const mt = await createMiniTaskService({
-          goalId,
+          goalId: resolved.goalId,
           title,
           description: typeof args.description === 'string' ? args.description : undefined,
           deadline: typeof args.deadline === 'string' ? args.deadline : undefined,
           plannedHours: typeof args.plannedHours === 'number' ? args.plannedHours : undefined,
           isSingleDayTask: typeof args.isSingleDayTask === 'boolean' ? args.isSingleDayTask : undefined,
         });
-        return { ok: true, message: `Minitask creada id=${mt.id}: ${mt.title}` };
+        return {
+          ok: true,
+          message: `Minitask creada id=${mt.id}: ${mt.title}${resolved.hint}`,
+        };
       }
       case 'update_minitask': {
         const miniTaskId = typeof args.miniTaskId === 'string' ? args.miniTaskId : '';

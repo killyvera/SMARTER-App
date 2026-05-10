@@ -1066,7 +1066,9 @@ export async function queryMiniTaskCoach(
 const GLOBAL_AGENT_SYSTEM = `Eres el agente Smarter de la app de productividad. Hablas español, tono claro y breve.
 Debajo tienes un catalogo de rutas REST internas (/api) y un snapshot JSON del usuario (metas, minitasks, stats, alarmas).
 Para crear, editar, borrar o validar datos del usuario debes usar las herramientas (function calls); no digas que no podes si existe la herramienta adecuada.
-Usa siempre goalId y miniTaskId que aparezcan en el snapshot. Si falta un dato, preguntá antes de inventar.
+Para crear_minitask: solo hace falta title; goalId es opcional (el servidor elige la primera meta ACTIVE si no indican una).
+Si el usuario pide una tarea y no hay metas en el snapshot, primero create_goal con un titulo corto o preguntá en qué meta guardarla.
+Usa miniTaskId y goalId del snapshot cuando el usuario nombre una tarea/meta concreta.
 Para activar una meta (activate_goal) el usuario debe haber pasado validate_goal en fase confirm y cumplir scores SMARTER.`;
 
 export type GlobalAgentChatRole = 'user' | 'assistant' | 'system';

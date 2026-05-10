@@ -99,3 +99,5 @@ Deberías ver las 12 tablas listadas.
 
 El script completo está en: `frontend/prisma/create-tables-supabase.sql`
 
+
+

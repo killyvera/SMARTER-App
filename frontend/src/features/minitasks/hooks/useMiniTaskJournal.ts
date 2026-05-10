@@ -67,6 +67,7 @@ export function useCreateMiniTaskJournalEntry() {
       queryClient.invalidateQueries({ queryKey: ['minitasks', variables.miniTaskId] });
       queryClient.invalidateQueries({ queryKey: ['stats'] });
       queryClient.invalidateQueries({ queryKey: ['goals'] });
+      queryClient.invalidateQueries({ queryKey: ['agent-today-panel'] });
     },
   });
 }
@@ -94,6 +95,7 @@ export function useUpdateMiniTaskJournalEntry() {
       queryClient.invalidateQueries({ queryKey: ['minitasks', variables.miniTaskId] });
       queryClient.invalidateQueries({ queryKey: ['stats'] });
       queryClient.invalidateQueries({ queryKey: ['goals'] });
+      queryClient.invalidateQueries({ queryKey: ['agent-today-panel'] });
     },
   });
 }

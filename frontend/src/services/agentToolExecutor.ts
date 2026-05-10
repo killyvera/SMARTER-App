@@ -9,6 +9,7 @@ import {
   checkAndUpdateGoalCompletion,
 } from '@/services/goalService';
 import { findGoalsByUser, findGoalById } from '@/repositories/goalRepository';
+import { findSmarterScoreByGoalId } from '@/repositories/smarterScoreRepository';
 import type { CreateGoalInput, UpdateGoalInput, UpdateMiniTaskInput, MiniTaskStatus } from '@smarter-app/shared';
 import type { AgentToolName } from '@/config/agentOpenAiTools';
 
@@ -53,7 +54,8 @@ async function resolveGoalIdForNewMiniTask(
 export async function executeAgentTool(
   userId: string,
   name: AgentToolName,
-  argsJson: string
+  argsJson: string,
+  opts?: { coachStrict?: boolean }
 ): Promise<{ ok: boolean; message: string }> {
   let args: Record<string, unknown>;
   try {
@@ -102,6 +104,16 @@ export async function executeAgentTool(
       case 'activate_goal': {
         const goalId = typeof args.goalId === 'string' ? args.goalId : '';
         if (!goalId) return { ok: false, message: 'goalId requerido' };
+        if (opts?.coachStrict) {
+          const score = await findSmarterScoreByGoalId(goalId);
+          if (!score || !score.passed) {
+            return {
+              ok: false,
+              message:
+                'Modo coach estricto: validá la meta con validate_goal (fase confirm) y cumplí el score SMARTER antes de activate_goal.',
+            };
+          }
+        }
         const g = await activateGoalService(goalId, userId);
         return { ok: true, message: `Meta activada: ${g.title}` };
       }
@@ -139,6 +151,16 @@ export async function executeAgentTool(
       case 'create_minitask': {
         const title = typeof args.title === 'string' ? args.title.trim() : '';
         if (!title) return { ok: false, message: 'title requerido' };
+        if (opts?.coachStrict) {
+          const desc = typeof args.description === 'string' ? args.description.trim() : '';
+          if (desc.length < 12) {
+            return {
+              ok: false,
+              message:
+                'Modo coach estricto: añadí una descripción más concreta (≥12 caracteres) o usá unlock_minitask para el flujo guiado con plugins y checklist.',
+            };
+          }
+        }
         const requested = typeof args.goalId === 'string' ? args.goalId : undefined;
         const resolved = await resolveGoalIdForNewMiniTask(userId, requested);
         if ('error' in resolved) return { ok: false, message: resolved.error };

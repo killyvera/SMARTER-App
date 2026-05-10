@@ -7,7 +7,7 @@ import { useAlarmStore } from '@/stores/alarmStore';
 import { usePendingTasks } from '@/features/alarms/hooks/usePendingTasks';
 import { useUIStore } from '@/stores/uiStore';
 import { useEffect } from 'react';
-import Image from 'next/image';
+import { AppMenuButtonIcon } from './AppMenuButtonIcon';
 
 export function AgentHeader() {
   const { user, logout } = useAuth();
@@ -32,14 +32,7 @@ export function AgentHeader() {
           aria-expanded={sidebarOpen}
           aria-controls="agent-nav-drawer"
         >
-          <Image
-            src="/icon-192x192.png"
-            alt=""
-            width={32}
-            height={32}
-            className="rounded-lg"
-            priority
-          />
+          <AppMenuButtonIcon />
         </Button>
         <h1 className="text-sm font-semibold truncate flex-1 text-center md:text-left">Smarter</h1>
         <div className="relative flex items-center justify-center w-9 h-9 text-muted-foreground shrink-0" aria-label="Alarmas hoy">

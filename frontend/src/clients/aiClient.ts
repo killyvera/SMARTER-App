@@ -1071,6 +1071,16 @@ Si el usuario pide una tarea y no hay metas en el snapshot, primero create_goal 
 Usa miniTaskId y goalId del snapshot cuando el usuario nombre una tarea/meta concreta.
 Para activar una meta (activate_goal) el usuario debe haber pasado validate_goal en fase confirm y cumplir scores SMARTER.`;
 
+const GLOBAL_AGENT_COACH_APPEND = `
+MODO COACH SMARTER ACTIVO:
+- Antes de create_goal, activate_goal o cambiar el estado de una meta a ACTIVE, guiá con preguntas breves alineadas a S/M/A/R/T y a los criterios extendidos de la app (Evaluable y Revisable), como en la guía SMARTER del producto.
+- Para nuevas metas, preferí proponer validate_goal en fase preview, resumí feedback y solo después ofrecé confirm con los campos aceptados.
+- Para minitasks nuevas con hábitos, métricas o plugins, orientá hacia unlock_minitask (genera checklist, calendario y gráficos) en lugar de create_minitask mínima sin contexto.
+`;
+
+const GLOBAL_AGENT_COACH_STRICT_HINT = `
+El usuario activó ejecución estricta: no propongas activate_goal sin haber pasado validate_goal confirm; si crean una minitask ambiciosa, pedí descripción concreta o unlock_minitask.`;
+
 export type GlobalAgentChatRole = 'user' | 'assistant' | 'system';
 
 export interface GlobalAgentClientMessage {
@@ -1090,7 +1100,8 @@ export async function runGlobalAgentTurn(
   userId: string,
   contextBlock: string,
   messages: GlobalAgentClientMessage[],
-  ip?: string
+  ip?: string,
+  coach?: { coachMode?: boolean; coachStrict?: boolean }
 ): Promise<GlobalAgentModelOutcome> {
   const requestInput = { messages, contextBlock };
 
@@ -1102,10 +1113,14 @@ export async function runGlobalAgentTurn(
       const client = getClient();
       const model = getModel();
 
+      let coachBlock = '';
+      if (coach?.coachMode) coachBlock += `\n\n${GLOBAL_AGENT_COACH_APPEND}`;
+      if (coach?.coachStrict) coachBlock += `\n\n${GLOBAL_AGENT_COACH_STRICT_HINT}`;
+
       const apiMessages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
         {
           role: 'system',
-          content: `${GLOBAL_AGENT_SYSTEM}\n\n${AGENT_API_CATALOG}\n\n${contextBlock}`,
+          content: `${GLOBAL_AGENT_SYSTEM}${coachBlock}\n\n${AGENT_API_CATALOG}\n\n${contextBlock}`,
         },
         ...messages.map((m) => ({
           role: m.role,

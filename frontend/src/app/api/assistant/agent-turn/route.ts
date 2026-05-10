@@ -34,7 +34,9 @@ export async function POST(request: NextRequest) {
           results.push({ approvalToken: payload.toolCallId, ok: false, message: 'Herramienta no permitida' });
           continue;
         }
-        const out = await executeAgentTool(userId, payload.name as AgentToolName, payload.arguments);
+        const out = await executeAgentTool(userId, payload.name as AgentToolName, payload.arguments, {
+          coachStrict: parsed.coachStrict === true,
+        });
         results.push({ approvalToken: payload.toolCallId, ok: out.ok, message: out.message });
       }
 
@@ -50,7 +52,8 @@ export async function POST(request: NextRequest) {
       userId,
       contextBlock,
       parsed.messages.map((m) => ({ role: m.role, content: m.content })),
-      ip
+      ip,
+      { coachMode: parsed.coachMode === true, coachStrict: parsed.coachStrict === true }
     );
 
     if (outcome.kind === 'text') {

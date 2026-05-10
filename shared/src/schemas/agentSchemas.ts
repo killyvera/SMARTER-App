@@ -10,6 +10,8 @@ export const agentTurnBodySchema = z.discriminatedUnion('mode', [
     mode: z.literal('chat'),
     messages: z.array(agentChatMessageSchema).max(40),
     sessionId: z.string().max(128).optional(),
+    coachMode: z.boolean().optional(),
+    coachStrict: z.boolean().optional(),
   }),
   z.object({
     mode: z.literal('execute_tools'),
@@ -21,6 +23,7 @@ export const agentTurnBodySchema = z.discriminatedUnion('mode', [
       )
       .min(1)
       .max(5),
+    coachStrict: z.boolean().optional(),
   }),
 ]);
 

@@ -45,3 +45,5 @@ Tu base de datos ya tiene tablas, pero Prisma no sabía qué migraciones ya esta
 - ✅ Las nuevas migraciones se aplicarán normalmente
 - ✅ No necesitarás hacer baseline de nuevo
 
+
+

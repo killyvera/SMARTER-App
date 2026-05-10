@@ -19,8 +19,8 @@ export const AGENT_CHAT_SHORTCUTS: AgentChatShortcut[] = [
   {
     id: 'flow_validate_activate',
     title: 'Validar y activar',
-    hint: 'validate_goal → confirm → activate',
-    prompt: `[Plantilla — validar meta] Quiero validar una meta en DRAFT: primero validate_goal en preview, mostrame el feedback; si encaja, prepará confirm y después activate_goal. Si no indico el goalId, usá el contexto o preguntame cuál de mis metas DRAFT.`,
+    hint: 'Preguntas SMARTER → preview → confirm',
+    prompt: `[Plantilla — validar meta] Tengo una meta en DRAFT para validar. Primero haceme el bucle de coaching: varias preguntas SMARTER (una o dos por turno) hasta cerrar criterios; podés usar update_goal o pedirme el Grid SMARTER. Recién cuando yo diga que listo para la validación automática, proponé validate_goal phase preview, después confirm y activate_goal si aplica. Si no digo el goalId, usá el contexto o preguntame cuál DRAFT.`,
   },
   {
     id: 'flow_minitask_unlock',

@@ -47,7 +47,7 @@ export const AGENT_API_CATALOG = `
 - PATCH /user/password — Cambio de password
 
 ## Flujos recomendados
-1) Nueva meta: create_goal (DRAFT) -> validate_goal fase preview -> usuario revisa -> validate_goal fase confirm con accepted* -> activate_goal cuando corresponda.
+1) Nueva meta / validar DRAFT: create_goal si hace falta -> bucle de preguntas SMARTER en chat (minimo 2 respuestas del usuario) o cuestionario Grid SMARTER -> recien entonces validate_goal fase preview -> usuario revisa -> validate_goal fase confirm con accepted* -> activate_goal cuando corresponda. No saltes el bucle si el usuario solo dijo "si" a "validamos?".
 2) Nueva minitask bajo meta activa: create_minitask con goalId del contexto -> opcional validate_minitask / unlock_minitask.
 3) Cerrar dia: upsert_journal_today por minitask.
 4) Eliminar meta: delete_goal (borra en cascada minitasks relacionadas en BD).

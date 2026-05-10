@@ -93,7 +93,7 @@ export const GLOBAL_AGENT_TOOLS: OpenAI.Chat.Completions.ChatCompletionTool[] = 
     function: {
       name: 'validate_goal',
       description:
-        'Validacion SMARTER con IA. phase=preview: sugerencias sin guardar minitasks finales. phase=confirm: guarda titulo/descripcion/minitasks aceptadas (misma semantica que POST /api/goals/:id/validate).',
+        'Validacion SMARTER con IA del servidor. NO la llames en el mismo turno en que el usuario solo dijo "si", "dale" o "adelante" a una invitacion generica a validar: antes debe existir un bucle breve de coaching en el chat (minimo 2 intercambios: vos preguntas SMARTER, el usuario responde, repetir o resumir). Excepciones: el usuario pide explicitamente "ejecuta validate_goal preview", "solo el preview", o ya completo el cuestionario SMARTER (widget/grid) en esta conversacion. phase=preview: sugerencias y score sin confirm final. phase=confirm: persiste titulo/descripcion/minitasks aceptadas.',
       parameters: {
         type: 'object',
         properties: {

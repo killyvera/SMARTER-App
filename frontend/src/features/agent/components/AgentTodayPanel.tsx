@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Bell, CalendarCheck, ChevronDown, ChevronUp, LineChart } from 'lucide-react';
 import { useState } from 'react';
+import { LineChart as RechartsLine, Line, ResponsiveContainer, Tooltip } from 'recharts';
 import { apiRequest } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -140,18 +141,23 @@ export function AgentTodayPanel() {
                   </h3>
                   <ul className="space-y-1">
                     {data!.metricsHints.map((m) => (
-                      <li key={m.miniTaskId} className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-[10px]">
-                        <span className="truncate min-w-0 flex-1">{m.title}</span>
-                        <span className="text-muted-foreground shrink-0">
-                          {m.totalEntries} ent. · {m.daysWithEntries} días
-                          {m.avgProgress > 0 ? ` · progr. ~${m.avgProgress}` : ''}
-                        </span>
-                        <Link
-                          href={`/minitasks/${m.miniTaskId}`}
-                          className={cn('text-primary shrink-0 hover:underline')}
-                        >
-                          Métricas
-                        </Link>
+                      <li key={m.miniTaskId} className="text-[10px] space-y-1">
+                        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
+                          <span className="truncate min-w-0 flex-1 font-medium text-foreground">{m.title}</span>
+                          <span className="text-muted-foreground shrink-0">
+                            {m.totalEntries} ent. · {m.daysWithEntries} días
+                            {m.avgProgress > 0 ? ` · progr. ~${m.avgProgress}` : ''}
+                          </span>
+                          <Link
+                            href={`/minitasks/${m.miniTaskId}`}
+                            className={cn('text-primary shrink-0 hover:underline')}
+                          >
+                            Métricas
+                          </Link>
+                        </div>
+                        {m.sparkline && m.sparkline.length >= 2 ? (
+                          <JournalSparkline points={m.sparkline} />
+                        ) : null}
                       </li>
                     ))}
                   </ul>
@@ -162,6 +168,41 @@ export function AgentTodayPanel() {
         </CardContent>
       ) : null}
     </Card>
+  );
+}
+
+function JournalSparkline({ points }: { points: Array<{ date: string; value: number }> }) {
+  const chartData = points.map((p, i) => ({
+    idx: i,
+    date: p.date,
+    value: p.value,
+  }));
+  return (
+    <div className="h-9 w-full max-w-[14rem]">
+      <ResponsiveContainer width="100%" height="100%">
+        <RechartsLine data={chartData} margin={{ top: 2, right: 4, left: 0, bottom: 0 }}>
+          <Tooltip
+            cursor={{ strokeDasharray: '3 3' }}
+            content={({ active, payload }) =>
+              active && payload?.[0] ? (
+                <div className="rounded border border-border bg-popover px-2 py-1 text-[10px] shadow-sm">
+                  <span className="text-muted-foreground">{(payload[0].payload as { date: string }).date}</span>
+                  <span className="ml-2 font-medium">{Number(payload[0].value).toFixed(1)}</span>
+                </div>
+              ) : null
+            }
+          />
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke="hsl(var(--primary))"
+            strokeWidth={2}
+            dot={false}
+            isAnimationActive={false}
+          />
+        </RechartsLine>
+      </ResponsiveContainer>
+    </div>
   );
 }
 

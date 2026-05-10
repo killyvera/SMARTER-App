@@ -28,4 +28,16 @@ export const AGENT_CHAT_SHORTCUTS: AgentChatShortcut[] = [
     hint: 'unlock_minitask y plugins',
     prompt: `[Plantilla — minitask] Quiero una minitask con plugins y bitácora: orientame a unlock_minitask. Si ya tengo una minitask en DRAFT sin desbloquear, proponé unlock_minitask con su id. Si no, create_minitask con título y descripción clara y luego unlock_minitask.`,
   },
+  {
+    id: 'flow_today_tracking',
+    title: 'Cómo voy hoy',
+    hint: 'Prioridades, alarmas y próximo paso',
+    prompt: `[Plantilla — seguimiento] ¿Cómo voy hoy con mis metas y tareas? Usá el contexto JSON (stats, pendingToday, minitasks) y referenciá el panel "Hoy" del chat (alarmas, checklist, métricas). Decime en 3–5 frases: prioridades de hoy, si hay cuellos de botella, y 1–2 acciones concretas (por ejemplo upsert_journal_today en una minitask con métricas o revisar una meta con plazo cercano).`,
+  },
+  {
+    id: 'flow_review_revisable',
+    title: 'Revisión SMARTER',
+    hint: 'Revisable: meta vs avance real',
+    prompt: `[Plantilla — Revisable] Quiero una revisión breve al estilo SMARTER "Revisable": compará mis metas ACTIVE y el avance real (minitasks, deadlines en el contexto, y si hay bitácora/métricas en el panel Hoy). Señalá desvíos, riesgos y si conviene un reajuste (readjustments) o recortar alcance. Terminá con una pregunta concreta para decidir el siguiente paso.`,
+  },
 ];

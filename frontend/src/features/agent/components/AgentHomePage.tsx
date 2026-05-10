@@ -8,8 +8,19 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { AlertTriangle, CheckCircle2, ClipboardList, Loader2, MessageSquarePlus, Send, Trash2, XCircle } from 'lucide-react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ClipboardList,
+  Loader2,
+  MessageSquarePlus,
+  RefreshCw,
+  Send,
+  Trash2,
+  XCircle,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { calculateGoalProgress } from '@/features/goals/utils/calculateGoalProgress';
 import { friendlyAgentToolMessage, sanitizeAgentApiErrorForClient } from '@/lib/agentErrorMessage';
 import { ProposalToolPreview } from '@/features/agent/components/proposals/ProposalToolPreview';
 import { AgentTodayPanel } from '@/features/agent/components/AgentTodayPanel';
@@ -48,8 +59,15 @@ type UiMsgKind =
   | 'minitask_pick';
 type SystemTone = 'default' | 'error' | 'coach';
 
-type GoalSnapRow = { id: string; title: string; status: string };
-type TaskSnapRow = { id: string; title: string; status: string; goalTitle?: string };
+type GoalSnapRow = {
+  id: string;
+  title: string;
+  status: string;
+  deadline?: string | null;
+  progressPercent?: number | null;
+  scoreAverage?: number | null;
+};
+type TaskSnapRow = { id: string; title: string; status: string; goalTitle?: string; deadline?: string | null };
 
 type UiMsg = {
   id: string;
@@ -124,37 +142,121 @@ function migrateLegacyMessages(raw: unknown): UiMsg[] | null {
   });
 }
 
+function formatGoalDeadlineShort(raw: string | null | undefined): string | null {
+  if (raw == null || raw === '') return null;
+  const s = typeof raw === 'string' ? raw : String(raw);
+  return s.slice(0, 10);
+}
+
+async function fetchContextDigestLines(): Promise<string[] | null> {
+  try {
+    const [stats, pending] = await Promise.all([
+      apiRequest<{
+        goals: { total: number; active: number; completed: number };
+        miniTasks: { total: number; pending: number; completed: number; draft: number };
+        progress: { percentage: number };
+      }>('/stats', { method: 'GET' }),
+      apiRequest<
+        Array<{
+          id: string;
+          title: string;
+          goalTitle?: string;
+          alarmTime?: string;
+          pluginId: string;
+          message?: string;
+        }>
+      >('/alarms/pending-today', { method: 'GET' }),
+    ]);
+
+    const lines: string[] = [];
+    lines.push(
+      'Trabajo como coach SMARTER: puedo guiarte con preguntas para una meta en borrador, validarla (preview y confirm) antes de activarla, y proponer minitasks concretas o desbloquearlas con IA y plugins.'
+    );
+    lines.push(
+      `Resumen: ${stats.goals.active} metas activas de ${stats.goals.total}, ${stats.miniTasks.pending} minitasks pendientes, ${stats.miniTasks.completed} completadas. Progreso medio ~${stats.progress.percentage}%.`
+    );
+    if (pending.length === 0) {
+      lines.push('No hay alarmas pendientes para hoy en este momento.');
+    } else {
+      lines.push(`Alarmas / pendientes hoy (${pending.length}):`);
+      pending.slice(0, 8).forEach((p) => {
+        lines.push(`• ${p.title}${p.goalTitle ? ` (${p.goalTitle})` : ''}${p.alarmTime ? ` — ${p.alarmTime}` : ''}`);
+      });
+      if (pending.length > 8) lines.push(`…y ${pending.length - 8} más.`);
+    }
+    return lines;
+  } catch {
+    return null;
+  }
+}
+
+function upsertSnapshotPair(messages: UiMsg[], goalMsg: UiMsg, taskMsg: UiMsg): UiMsg[] {
+  for (let i = messages.length - 2; i >= 0; i--) {
+    const a = messages[i];
+    const b = messages[i + 1];
+    if (a?.kind === 'goal_snapshot' && b?.kind === 'task_table') {
+      return [...messages.slice(0, i), goalMsg, taskMsg, ...messages.slice(i + 2)];
+    }
+  }
+  return [...messages, goalMsg, taskMsg];
+}
+
 async function fetchSnapshotWidgets(): Promise<{ goalMsg: UiMsg; taskMsg: UiMsg } | null> {
   try {
     const [goals, tasks] = await Promise.all([
-      apiRequest<Array<{ id: string; title: string; status: string }>>('/goals', { method: 'GET' }),
-      apiRequest<Array<{ id: string; title: string; status: string; goal?: { title?: string } }>>('/minitasks', {
+      apiRequest<
+        Array<{
+          id: string;
+          title: string;
+          status: string;
+          deadline?: string | null;
+          smarterScore?: { average: number } | null;
+          miniTasks?: Array<{ status: string }>;
+        }>
+      >('/goals', { method: 'GET' }),
+      apiRequest<
+        Array<{
+          id: string;
+          title: string;
+          status: string;
+          goal?: { title?: string };
+          deadline?: string | null;
+        }>
+      >('/minitasks', {
         method: 'GET',
       }),
     ]);
-    const goalRows: GoalSnapRow[] = goals.slice(0, 14).map((g) => ({
-      id: g.id,
-      title: g.title,
-      status: g.status,
-    }));
+    const goalRows: GoalSnapRow[] = goals.slice(0, 14).map((g) => {
+      const gp = calculateGoalProgress(g.miniTasks ?? []);
+      return {
+        id: g.id,
+        title: g.title,
+        status: g.status,
+        deadline: formatGoalDeadlineShort(g.deadline ?? null),
+        progressPercent: gp.total > 0 ? gp.percentage : null,
+        scoreAverage: g.smarterScore?.average != null ? Math.round(g.smarterScore.average) : null,
+      };
+    });
     const taskRows: TaskSnapRow[] = tasks.slice(0, 18).map((t) => ({
       id: t.id,
       title: t.title,
       status: t.status,
       goalTitle: t.goal?.title,
+      deadline: formatGoalDeadlineShort(t.deadline ?? null),
     }));
+    const stamp = new Date().toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' });
     return {
       goalMsg: {
         id: id(),
         role: 'system',
-        content: 'Metas (actualizado)',
+        content: `Metas · vista rápida (${stamp})`,
         kind: 'goal_snapshot',
         goalRows,
       },
       taskMsg: {
         id: id(),
         role: 'system',
-        content: 'Minitasks (actualizado)',
+        content: `Minitasks · vista rápida (${stamp})`,
         kind: 'task_table',
         taskRows,
       },
@@ -177,6 +279,7 @@ export function AgentHomePage() {
   const [booted, setBooted] = useState(false);
   const [coachMode, setCoachMode] = useState(true);
   const [coachStrict, setCoachStrict] = useState(false);
+  const [viewRefreshBusy, setViewRefreshBusy] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const userId = user?.id;
@@ -246,59 +349,49 @@ export function AgentHomePage() {
   }, [messages, userId, booted, activeSessionId]);
 
   const injectContextSummary = useCallback(async () => {
-    try {
-      const [stats, pending] = await Promise.all([
-        apiRequest<{
-          goals: { total: number; active: number; completed: number };
-          miniTasks: { total: number; pending: number; completed: number; draft: number };
-          progress: { percentage: number };
-        }>('/stats', { method: 'GET' }),
-        apiRequest<
-          Array<{
-            id: string;
-            title: string;
-            goalTitle?: string;
-            alarmTime?: string;
-            pluginId: string;
-            message?: string;
-          }>
-        >('/alarms/pending-today', { method: 'GET' }),
-      ]);
-
-      const lines: string[] = [];
-      lines.push(
-        'Trabajo como coach SMARTER: puedo guiarte con preguntas para una meta en borrador, validarla (preview y confirm) antes de activarla, y proponer minitasks concretas o desbloquearlas con IA y plugins.'
-      );
-      lines.push(
-        `Resumen: ${stats.goals.active} metas activas de ${stats.goals.total}, ${stats.miniTasks.pending} minitasks pendientes, ${stats.miniTasks.completed} completadas. Progreso medio ~${stats.progress.percentage}%.`
-      );
-      if (pending.length === 0) {
-        lines.push('No hay alarmas pendientes para hoy en este momento.');
-      } else {
-        lines.push(`Alarmas / pendientes hoy (${pending.length}):`);
-        pending.slice(0, 8).forEach((p) => {
-          lines.push(`• ${p.title}${p.goalTitle ? ` (${p.goalTitle})` : ''}${p.alarmTime ? ` — ${p.alarmTime}` : ''}`);
-        });
-        if (pending.length > 8) lines.push(`…y ${pending.length - 8} más.`);
-      }
-
-      setMessages((prev) => {
-        if (prev.length > 0) return prev;
-        return [{ id: id(), role: 'system', content: lines.join('\n') }];
-      });
-    } catch {
-      setMessages((prev) => {
-        if (prev.length > 0) return prev;
-        return [
-          {
-            id: id(),
-            role: 'system',
-            content: 'No se pudo cargar el resumen inicial. Podés escribirle al agente igualmente.',
-          },
-        ];
-      });
-    }
+    const lines = await fetchContextDigestLines();
+    setMessages((prev) => {
+      if (prev.length > 0) return prev;
+      if (lines) return [{ id: id(), role: 'system', content: lines.join('\n') }];
+      return [
+        {
+          id: id(),
+          role: 'system',
+          content: 'No se pudo cargar el resumen inicial. Podés escribirle al agente igualmente.',
+        },
+      ];
+    });
   }, []);
+
+  const mergeSnapshotsIntoChat = useCallback(async () => {
+    queryClient.invalidateQueries({ queryKey: ['agent-today-panel'] });
+    queryClient.invalidateQueries({ queryKey: ['goals'] });
+    const [widgets, digestLines] = await Promise.all([fetchSnapshotWidgets(), fetchContextDigestLines()]);
+    setMessages((prev) => {
+      let next = prev;
+      if (digestLines) {
+        const idx = next.findIndex(
+          (m) => m.role === 'system' && !m.kind && m.content.includes('Trabajo como coach SMARTER')
+        );
+        if (idx >= 0) {
+          next = next.map((m, i) => (i === idx ? { ...m, content: digestLines.join('\n') } : m));
+        }
+      }
+      if (widgets) {
+        return upsertSnapshotPair(next, widgets.goalMsg, widgets.taskMsg);
+      }
+      return next;
+    });
+  }, [queryClient]);
+
+  const refreshViewOnly = useCallback(async () => {
+    setViewRefreshBusy(true);
+    try {
+      await mergeSnapshotsIntoChat();
+    } finally {
+      setViewRefreshBusy(false);
+    }
+  }, [mergeSnapshotsIntoChat]);
 
   useEffect(() => {
     if (booted && userId) void injectContextSummary();
@@ -428,6 +521,7 @@ export function AgentHomePage() {
 
       if (res.type === 'message') {
         setMessages((prev) => [...prev, { id: id(), role: 'assistant', content: res.content }]);
+        await mergeSnapshotsIntoChat();
       } else if (res.type === 'tool_proposals') {
         setMessages((prev) => [
           ...prev,
@@ -512,11 +606,7 @@ export function AgentHomePage() {
           return withResult;
         });
         if (hadOk) {
-          queryClient.invalidateQueries({ queryKey: ['agent-today-panel'] });
-          const widgets = await fetchSnapshotWidgets();
-          if (widgets) {
-            setMessages((prev) => [...prev, widgets.goalMsg, widgets.taskMsg]);
-          }
+          await mergeSnapshotsIntoChat();
         }
       }
     } catch (e) {
@@ -602,6 +692,22 @@ export function AgentHomePage() {
           <ClipboardList className="h-3.5 w-3.5" aria-hidden />
           Grid SMARTER
         </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1 px-2 text-xs shrink-0"
+          disabled={!booted || loading || hasOpenProposals || viewRefreshBusy}
+          onClick={() => void refreshViewOnly()}
+          aria-busy={viewRefreshBusy}
+        >
+          {viewRefreshBusy ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+          ) : (
+            <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+          )}
+          Refrescar vista
+        </Button>
       </div>
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 min-h-0">
         {messages.map((m) => (
@@ -631,7 +737,12 @@ export function AgentHomePage() {
                   <p className="font-medium text-sm leading-snug text-amber-950 dark:text-amber-50">{m.content}</p>
                   <SmarterWorksheetWidget
                     disabled={loading || hasOpenProposals}
-                    onAfterApply={(prompt) => void sendUserMessage(prompt)}
+                    onAfterApply={(prompt) => {
+                      void (async () => {
+                        await mergeSnapshotsIntoChat();
+                        await sendUserMessage(prompt);
+                      })();
+                    }}
                   />
                 </div>
               ) : m.kind === 'minitask_pick' && m.minitaskPick ? (
@@ -721,7 +832,7 @@ export function AgentHomePage() {
           </Button>
         </div>
         <p className="text-[10px] text-muted-foreground px-0.5">Plantillas (un toque para enviar al agente)</p>
-        <div className="grid grid-cols-1 min-[380px]:grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 min-[520px]:grid-cols-3 min-[720px]:grid-cols-5 gap-2">
           {AGENT_CHAT_SHORTCUTS.map((s) => (
             <button
               key={s.id}
@@ -781,18 +892,40 @@ function AgentGoalSnapshotTable({ rows, titleLine }: { rows: GoalSnapRow[]; titl
           <thead>
             <tr className="border-b border-border/60 text-muted-foreground">
               <th className="px-2 py-1 font-medium">Meta</th>
+              <th className="px-2 py-1 font-medium">Plazo</th>
+              <th className="px-2 py-1 font-medium min-w-[5rem]">Progreso</th>
+              <th className="px-2 py-1 font-medium">SMARTER</th>
               <th className="px-2 py-1 font-medium">Estado</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.id} className="border-b border-border/40 last:border-0">
-                <td className="px-2 py-1">
+                <td className="px-2 py-1 align-top">
                   <Link href={`/goals/${r.id}`} className="text-primary underline-offset-2 hover:underline">
                     {r.title}
                   </Link>
                 </td>
-                <td className="px-2 py-1 text-muted-foreground">{r.status}</td>
+                <td className="px-2 py-1 text-muted-foreground align-top whitespace-nowrap">{r.deadline ?? '—'}</td>
+                <td className="px-2 py-1 align-top">
+                  {r.progressPercent != null ? (
+                    <div className="space-y-0.5 min-w-[4.5rem]">
+                      <div className="h-1.5 w-full max-w-[6rem] rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-primary/80"
+                          style={{ width: `${Math.min(100, Math.max(0, r.progressPercent))}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">{r.progressPercent}%</span>
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </td>
+                <td className="px-2 py-1 text-muted-foreground align-top whitespace-nowrap">
+                  {r.scoreAverage != null ? `${r.scoreAverage}` : '—'}
+                </td>
+                <td className="px-2 py-1 text-muted-foreground align-top">{r.status}</td>
               </tr>
             ))}
           </tbody>
@@ -815,6 +948,7 @@ function AgentTaskSnapshotTable({ rows, titleLine }: { rows: TaskSnapRow[]; titl
             <tr className="border-b border-border/60 text-muted-foreground">
               <th className="px-2 py-1 font-medium">Minitask</th>
               <th className="px-2 py-1 font-medium">Meta</th>
+              <th className="px-2 py-1 font-medium">Plazo</th>
               <th className="px-2 py-1 font-medium">Estado</th>
             </tr>
           </thead>
@@ -827,6 +961,7 @@ function AgentTaskSnapshotTable({ rows, titleLine }: { rows: TaskSnapRow[]; titl
                   </Link>
                 </td>
                 <td className="px-2 py-1 text-muted-foreground">{r.goalTitle ?? '—'}</td>
+                <td className="px-2 py-1 text-muted-foreground whitespace-nowrap">{r.deadline ?? '—'}</td>
                 <td className="px-2 py-1 text-muted-foreground">{r.status}</td>
               </tr>
             ))}

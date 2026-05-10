@@ -38,6 +38,8 @@ export interface TodayPanelMetricsHint {
   daysWithEntries: number;
   /** Promedio de progressValue en entradas con dato (0 si no hay) */
   avgProgress: number;
+  /** Últimos puntos de progressValue con fecha (para mini gráfico en el panel Hoy) */
+  sparkline?: Array<{ date: string; value: number }>;
 }
 
 export interface TodayPanelPayload {
@@ -116,12 +118,14 @@ export async function buildTodayPanelPayload(userId: string): Promise<TodayPanel
     forMetrics.map(async (c) => {
       try {
         const m = await getJournalMetrics(c.miniTaskId);
+        const sparkline = m.progressByDate.slice(-14).map((p) => ({ date: p.date, value: p.value }));
         metricsHints.push({
           miniTaskId: c.miniTaskId,
           title: c.title,
           totalEntries: m.totalEntries,
           daysWithEntries: m.daysWithEntries,
           avgProgress: Math.round(m.avgProgress * 10) / 10,
+          ...(sparkline.length >= 2 ? { sparkline } : {}),
         });
       } catch {
         /* ignore */

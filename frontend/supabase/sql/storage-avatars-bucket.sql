@@ -2,6 +2,10 @@
 -- Bucket público de avatares + lectura pública de objetos.
 -- Ejecutá este archivo en: Supabase Dashboard → SQL → New query → Run
 --
+-- CLI (Supabase 2.x, proyecto linkeado): desde la raíz del repo:
+--   npx supabase db query -f frontend/supabase/sql/storage-avatars-bucket.sql --linked
+-- (En versiones viejas existía `db execute`; ahora es `db query -f`.)
+--
 -- Subidas: hacelas desde el backend con SUPABASE_SERVICE_ROLE_KEY (bypass RLS).
 -- No pegues la service_role en el cliente ni en variables NEXT_PUBLIC_*.
 -- =============================================================================

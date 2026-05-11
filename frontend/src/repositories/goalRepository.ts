@@ -133,7 +133,7 @@ export async function findGoalsByUser(
 export async function updateGoal(
   id: string,
   userId: string,
-  data: { title?: string; description?: string; deadline?: Date; status?: string; plannedHours?: number; isSingleDayGoal?: boolean; color?: string }
+  data: { title?: string; description?: string | null; deadline?: Date; status?: string; plannedHours?: number; isSingleDayGoal?: boolean; color?: string }
 ): Promise<Goal> {
   return prisma.goal.update({
     where: {

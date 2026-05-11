@@ -22,4 +22,9 @@ export async function findSuggestedMiniTasksByGoal(goalId: string): Promise<Sugg
   });
 }
 
+/** Reemplaza sugerencias persistidas al re-confirmar validate_goal (idempotente). */
+export async function deleteSuggestedMiniTasksByGoal(goalId: string) {
+  return prisma.suggestedMiniTask.deleteMany({ where: { goalId } });
+}
+
 

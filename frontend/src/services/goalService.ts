@@ -6,9 +6,12 @@ import {
   getGoalSnapshot,
   deleteGoal as deleteGoalRecord,
 } from '@/repositories/goalRepository';
-import { createSmarterScore, findSmarterScoreByGoalId } from '@/repositories/smarterScoreRepository';
-import { createSuggestedMiniTask } from '@/repositories/suggestedMiniTaskRepository';
-import { createMiniTask, findMiniTasksByGoal } from '@/repositories/miniTaskRepository';
+import { findSmarterScoreByGoalId, upsertSmarterScore } from '@/repositories/smarterScoreRepository';
+import {
+  createSuggestedMiniTask,
+  deleteSuggestedMiniTasksByGoal,
+} from '@/repositories/suggestedMiniTaskRepository';
+import { createMiniTask, findMiniTasksByGoal, updateMiniTask } from '@/repositories/miniTaskRepository';
 import { createReadjustment } from '@/repositories/readjustmentRepository';
 import { validateGoalSmart, type GoalValidationResponse } from '@/clients/aiClient';
 import { calculateGoalProgress } from '@/features/goals/utils/calculateGoalProgress';
@@ -17,6 +20,20 @@ import { format } from 'date-fns';
 
 const SMARTER_THRESHOLD = 60;
 const SMARTER_AVERAGE_THRESHOLD = 70;
+
+function normalizeAcceptedMiniTaskTitle(title: string): string {
+  return title.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function takeDraftMiniTaskByNormalizedTitle<T extends { id: string; title: string }>(
+  pool: T[],
+  normalized: string
+): T | undefined {
+  const i = pool.findIndex((t) => normalizeAcceptedMiniTaskTitle(t.title) === normalized);
+  if (i === -1) return undefined;
+  const [t] = pool.splice(i, 1);
+  return t;
+}
 
 export async function createGoalService(userId: string, input: CreateGoalInput) {
   const deadline = input.deadline ? new Date(input.deadline) : undefined;
@@ -75,11 +92,16 @@ export async function validateGoalService(
   
   if (hasConfirmationOptions) {
     // Actualizar título y descripción si se proporcionaron
-    if (options.acceptedTitle || options.acceptedDescription) {
-      await updateGoal(goalId, userId, {
-        title: options.acceptedTitle,
-        description: options.acceptedDescription,
-      });
+    const goalTextPatch: { title?: string; description?: string | null } = {};
+    const acceptedT =
+      typeof options.acceptedTitle === 'string' ? options.acceptedTitle.trim() : '';
+    if (acceptedT) goalTextPatch.title = acceptedT;
+    if (options.acceptedDescription !== undefined && options.acceptedDescription !== null) {
+      const desc = String(options.acceptedDescription).trim();
+      goalTextPatch.description = desc.length ? desc : null;
+    }
+    if (Object.keys(goalTextPatch).length > 0) {
+      await updateGoal(goalId, userId, goalTextPatch);
     }
     
     // Obtener el goal actualizado para validar
@@ -105,7 +127,7 @@ export async function validateGoalService(
     }
     
     // Guardar SmarterScore
-    const score = await createSmarterScore(goalId, {
+    const score = await upsertSmarterScore(goalId, {
       specific: validation.scores.specific,
       measurable: validation.scores.measurable,
       achievable: validation.scores.achievable,
@@ -124,59 +146,82 @@ export async function validateGoalService(
         count: options.acceptedMiniTasks.length,
         tasks: options.acceptedMiniTasks,
       });
-      
-      // Primero crear todas las minitasks para tener sus IDs
+
+      await deleteSuggestedMiniTasksByGoal(goalId);
+
       const createdTasks: Array<{ id: string; title: string; order: number }> = [];
-      
-      // Ordenar por order si está disponible
+      const draftPool = (await findMiniTasksByGoal(goalId)).filter((t) => t.status === 'DRAFT');
+
       const sortedTasks = [...options.acceptedMiniTasks].sort((a, b) => {
         const orderA = (a as any).order ?? 999;
         const orderB = (b as any).order ?? 999;
         return orderA - orderB;
       });
-      
+
       for (const suggested of sortedTasks) {
         try {
-          // Convertir priority de string a número para SuggestedMiniTask (legacy)
-          const priorityNumber = suggested.priority === 'high' ? 10 : suggested.priority === 'medium' ? 5 : 1;
-          
-          // Resolver dependsOn: si es un título, buscar el ID de la minitask creada
+          const priorityNumber =
+            suggested.priority === 'high' ? 10 : suggested.priority === 'medium' ? 5 : 1;
+
           let dependsOnId: string | null = null;
           if ((suggested as any).dependsOn) {
             const dependencyTitle = (suggested as any).dependsOn;
-            const dependencyTask = createdTasks.find(t => t.title === dependencyTitle);
+            const dependencyTask = createdTasks.find((t) => t.title === dependencyTitle);
             if (dependencyTask) {
               dependsOnId = dependencyTask.id;
             }
           }
-          
-          // Crear como MiniTask real con todos los campos
-          const saved = await createMiniTask(goalId, {
-            title: suggested.title,
-            description: suggested.description,
-            priority: (suggested as any).priority || null,
-            order: (suggested as any).order,
-            dependsOn: dependsOnId,
-            schedulingType: (suggested as any).schedulingType || null,
-            scheduledDate: (suggested as any).scheduledDate ? new Date((suggested as any).scheduledDate) : null,
-            scheduledTime: (suggested as any).scheduledTime || null,
-          });
-          
+
+          const norm = normalizeAcceptedMiniTaskTitle(suggested.title);
+          const reuse = takeDraftMiniTaskByNormalizedTitle(draftPool, norm);
+
+          const schedulingTypeRaw = (suggested as any).schedulingType || null;
+          const scheduledDate = (suggested as any).scheduledDate
+            ? new Date((suggested as any).scheduledDate)
+            : null;
+          const scheduledTime = (suggested as any).scheduledTime || null;
+          const orderFromPayload = (suggested as any).order;
+          const priorityRaw = (suggested as any).priority || null;
+
+          let saved;
+          if (reuse) {
+            saved = await updateMiniTask(reuse.id, {
+              title: suggested.title,
+              description: suggested.description,
+              order: orderFromPayload !== undefined ? orderFromPayload : reuse.order,
+              priority: priorityRaw ?? undefined,
+              dependsOn: dependsOnId,
+              schedulingType: schedulingTypeRaw ?? undefined,
+              scheduledDate,
+              scheduledTime,
+            });
+          } else {
+            saved = await createMiniTask(goalId, {
+              title: suggested.title,
+              description: suggested.description,
+              priority: priorityRaw,
+              order: orderFromPayload,
+              dependsOn: dependsOnId,
+              schedulingType: schedulingTypeRaw,
+              scheduledDate,
+              scheduledTime,
+            });
+          }
+
           createdTasks.push({
             id: saved.id,
             title: saved.title,
             order: saved.order,
           });
-          
-          console.log('MiniTask creada exitosamente:', {
+
+          console.log(reuse ? 'MiniTask actualizada (confirmación idempotente)' : 'MiniTask creada', {
             id: saved.id,
             title: saved.title,
             status: saved.status,
             order: saved.order,
             priority: saved.priority,
           });
-          
-          // También guardar como SuggestedMiniTask para referencia/historial
+
           await createSuggestedMiniTask(goalId, {
             title: suggested.title,
             description: suggested.description,
@@ -190,7 +235,7 @@ export async function validateGoalService(
           throw error;
         }
       }
-      console.log(`Total de ${options.acceptedMiniTasks.length} minitasks creadas`);
+      console.log(`Total de ${options.acceptedMiniTasks.length} minitasks sincronizadas (crear/actualizar)`);
     } else {
       console.log('No hay minitasks aceptadas para guardar (array vacío o undefined)');
     }

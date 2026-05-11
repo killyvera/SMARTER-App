@@ -398,6 +398,62 @@ async function protectedAICall<T>(
   }
 }
 
+function extractJsonFromModelContent(content: string): string {
+  const trimmed = content.trim();
+  const fence = /^```(?:json)?\s*\n?([\s\S]*?)\n?```$/im.exec(trimmed);
+  if (fence) {
+    return fence[1].trim();
+  }
+  const start = trimmed.indexOf('{');
+  const end = trimmed.lastIndexOf('}');
+  if (start >= 0 && end > start) {
+    return trimmed.slice(start, end + 1);
+  }
+  return trimmed;
+}
+
+function toScoreNumber(value: unknown, label: string): number {
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(n)) {
+    throw new Error(`Respuesta del modelo de IA inválida: score "${label}" no es un número válido`);
+  }
+  return n;
+}
+
+function normalizeGoalValidationScores(raw: unknown): GoalValidationResponse['scores'] {
+  if (!raw || typeof raw !== 'object') {
+    throw new Error('Respuesta del modelo de IA inválida: faltan scores');
+  }
+  const s = raw as Record<string, unknown>;
+  const scores: GoalValidationResponse['scores'] = {
+    specific: toScoreNumber(s.specific, 'specific'),
+    measurable: toScoreNumber(s.measurable, 'measurable'),
+    achievable: toScoreNumber(s.achievable, 'achievable'),
+    relevant: toScoreNumber(s.relevant, 'relevant'),
+    timebound: toScoreNumber(s.timebound, 'timebound'),
+    evaluate: 0,
+    readjust: 0,
+  };
+  const meanSmart =
+    (scores.specific +
+      scores.measurable +
+      scores.achievable +
+      scores.relevant +
+      scores.timebound) /
+    5;
+  const evaluateRaw = s.evaluate ?? s.evaluable;
+  const readjustRaw = s.readjust ?? s.readjustable ?? s.reajustable;
+  scores.evaluate =
+    evaluateRaw !== undefined && evaluateRaw !== null
+      ? toScoreNumber(evaluateRaw, 'evaluate')
+      : meanSmart;
+  scores.readjust =
+    readjustRaw !== undefined && readjustRaw !== null
+      ? toScoreNumber(readjustRaw, 'readjust')
+      : meanSmart;
+  return scores;
+}
+
 export async function validateGoalSmart(
   request: GoalValidationRequest
 ): Promise<GoalValidationResponse> {
@@ -444,8 +500,21 @@ ${request.userContext ? `Contexto del usuario: ${request.userContext}` : ''}`;
           throw new Error('No se recibió respuesta del modelo de IA');
         }
 
-        const parsed = JSON.parse(content) as GoalValidationResponse;
-        
+        let parsed: GoalValidationResponse;
+        try {
+          parsed = JSON.parse(extractJsonFromModelContent(content)) as GoalValidationResponse;
+        } catch {
+          throw new Error('Respuesta del modelo de IA no es JSON válido');
+        }
+
+        if (typeof parsed.passed !== 'boolean') {
+          throw new Error('Respuesta del modelo de IA inválida: falta passed booleano');
+        }
+        if (typeof parsed.average !== 'number' || Number.isNaN(parsed.average)) {
+          throw new Error('Respuesta del modelo de IA inválida: falta average numérico');
+        }
+        parsed.scores = normalizeGoalValidationScores(parsed.scores);
+
         console.log('🤖 [AI CLIENT] Respuesta del modelo parseada:', {
           hasScores: !!parsed.scores,
           hasSuggestedTitle: !!parsed.suggestedTitle,
@@ -455,11 +524,6 @@ ${request.userContext ? `Contexto del usuario: ${request.userContext}` : ''}`;
           suggestedDescription: parsed.suggestedDescription,
           suggestedMiniTasks: parsed.suggestedMiniTasks,
         });
-        
-        // Validar estructura
-        if (!parsed.scores || !parsed.average || typeof parsed.passed !== 'boolean') {
-          throw new Error('Respuesta del modelo de IA inválida: faltan scores o average');
-        }
 
         // Asegurar que siempre haya sugerencias (si el modelo no las proporcionó, usar valores por defecto)
         if (!parsed.suggestedTitle) {

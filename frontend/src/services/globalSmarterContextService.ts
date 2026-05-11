@@ -27,7 +27,14 @@ export async function buildGlobalSmarterContext(userId: string): Promise<{
     progressAvgPercent: number;
   };
   pendingToday: Awaited<ReturnType<typeof getPendingTasksForToday>>;
-  goals: Array<{ id: string; title: string; status: string; deadline: string | null }>;
+  goals: Array<{
+    id: string;
+    title: string;
+    status: string;
+    deadline: string | null;
+    /** true si ya hubo validate_goal confirm (hay fila SmarterScore en BD). */
+    smarterValidated: boolean;
+  }>;
   miniTasks: Array<{
     id: string;
     goalId: string;
@@ -74,6 +81,7 @@ export async function buildGlobalSmarterContext(userId: string): Promise<{
     title: trimTitle(g.title),
     status: g.status,
     deadline: g.deadline ? g.deadline.toISOString().slice(0, 10) : null,
+    smarterValidated: Boolean((g as { smarterScore?: unknown }).smarterScore),
   }));
 
   const mtSlice = miniTasks.slice(0, MAX_MINITASKS).map((mt) => {

@@ -528,7 +528,9 @@ export function AgentHomePage() {
           {
             id: id(),
             role: 'assistant',
-            content: res.assistantNote?.trim() || 'Puedo aplicar estos cambios. Confirmá si te parece bien.',
+            content:
+              res.assistantNote?.trim() ||
+              'Revisá las acciones propuestas abajo y confirmá si querés aplicarlas.',
             proposals: res.proposals,
           },
         ]);

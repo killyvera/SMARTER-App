@@ -96,9 +96,14 @@ export async function POST(request: NextRequest) {
 
     const duration = Date.now() - start;
     logApiRequest('POST', '/api/assistant/agent-turn', 200, duration);
+    const assistantNote =
+      typeof outcome.content === 'string' && outcome.content.trim().length > 0
+        ? outcome.content.trim()
+        : defaultAssistantNoteForToolCalls(outcome.toolCalls);
+
     return NextResponse.json({
       type: 'tool_proposals',
-      assistantNote: outcome.content,
+      assistantNote,
       proposals,
     });
   } catch (error) {
@@ -117,7 +122,11 @@ function summarizeTool(name: string, argsJson: string): string {
     if (name === 'update_goal') return `Actualizar meta ${String(a.goalId ?? '').slice(0, 8)}…`;
     if (name === 'delete_goal') return `Eliminar meta ${String(a.goalId ?? '').slice(0, 8)}…`;
     if (name === 'activate_goal') return `Activar meta ${String(a.goalId ?? '').slice(0, 8)}…`;
-    if (name === 'validate_goal') return `Validar meta (${String(a.phase ?? '')})`;
+    if (name === 'validate_goal') {
+      const gid = String(a.goalId ?? '').slice(0, 8);
+      const phase = String(a.phase ?? '');
+      return `Validar meta ${gid}…${phase ? ` (${phase})` : ''}`;
+    }
     if (name === 'apply_smarter_worksheet') return `Cuestionario SMARTER → meta ${String(a.goalId ?? '').slice(0, 8)}…`;
     if (name === 'sync_goals_completion') return 'Sincronizar completitud de metas';
     if (name === 'create_minitask') return `Crear minitask: ${String(a.title ?? '').slice(0, 40)}`;
@@ -131,4 +140,21 @@ function summarizeTool(name: string, argsJson: string): string {
     /* ignore */
   }
   return name;
+}
+
+function defaultAssistantNoteForToolCalls(
+  toolCalls: Array<{ name: string; arguments: string }>
+): string {
+  if (!toolCalls.length) {
+    return 'Puedo aplicar estos cambios. Confirmá si te parece bien.';
+  }
+  const labels = toolCalls.map((tc) => summarizeTool(tc.name, tc.arguments));
+  if (labels.length === 1) {
+    return `Te propongo esta acción: ${labels[0]}. Revisá el panel de confirmación abajo y confirmá si te parece bien.`;
+  }
+  return (
+    `Te propongo estas acciones:\n` +
+    labels.map((l, i) => `${i + 1}. ${l}`).join('\n') +
+    `\n\nRevisá el panel abajo y confirmá las que quieras aplicar.`
+  );
 }

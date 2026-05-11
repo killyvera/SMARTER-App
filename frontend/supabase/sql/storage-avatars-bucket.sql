@@ -7,6 +7,7 @@
 --
 -- Sin link (usa DATABASE_URL de frontend/.env.local, mismo que Prisma):
 --   cd frontend && npm run db:storage-avatars-bucket
+--   o desde la raíz del monorepo: npm run db:storage-avatars-bucket
 --
 -- Subidas: hacelas desde el backend con SUPABASE_SERVICE_ROLE_KEY (bypass RLS).
 -- No pegues la service_role en el cliente ni en variables NEXT_PUBLIC_*.

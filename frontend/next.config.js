@@ -1,7 +1,28 @@
 /** @type {import('next').NextConfig} */
+const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
+  ? (() => {
+      try {
+        return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname;
+      } catch {
+        return undefined;
+      }
+    })()
+  : undefined;
+
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@smarter-app/shared'],
+  ...(supabaseHost && {
+    images: {
+      remotePatterns: [
+        {
+          protocol: 'https',
+          hostname: supabaseHost,
+          pathname: '/storage/v1/object/public/**',
+        },
+      ],
+    },
+  }),
   // Configuración para Netlify
   ...(process.env.NETLIFY && {
     // En Netlify, usar output standalone para mejor compatibilidad

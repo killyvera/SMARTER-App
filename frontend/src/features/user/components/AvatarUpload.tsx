@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Camera, X } from 'lucide-react';
+import { Camera, Loader2, X } from 'lucide-react';
 import Image from 'next/image';
+import { useDeleteAvatar, useUploadAvatar } from '../hooks/useUserProfile';
 
 interface AvatarUploadProps {
   currentAvatarUrl?: string | null;
@@ -11,43 +12,68 @@ interface AvatarUploadProps {
   disabled?: boolean;
 }
 
+const MAX_BYTES = 5 * 1024 * 1024;
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
 export function AvatarUpload({ currentAvatarUrl, onAvatarChange, disabled }: AvatarUploadProps) {
   const [preview, setPreview] = useState<string | null>(currentAvatarUrl || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadAvatar = useUploadAvatar();
+  const deleteAvatar = useDeleteAvatar();
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    setPreview(currentAvatarUrl || null);
+  }, [currentAvatarUrl]);
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validar tipo de archivo
-    if (!file.type.startsWith('image/')) {
-      alert('Por favor, selecciona un archivo de imagen');
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      alert('Usá JPEG, PNG, WebP o GIF');
       return;
     }
 
-    // Validar tamaño (máximo 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      alert('La imagen debe ser menor a 2MB');
+    if (file.size > MAX_BYTES) {
+      alert('La imagen no puede superar 5 MB');
       return;
     }
 
-    // Convertir a base64
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      setPreview(base64String);
-      onAvatarChange(base64String);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const url = await uploadAvatar.mutateAsync(file);
+      setPreview(url);
+      onAvatarChange(url);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'No se pudo subir el avatar');
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
-  const handleRemove = () => {
+  const handleRemove = async () => {
+    const isHttp =
+      typeof preview === 'string' &&
+      (preview.startsWith('http://') || preview.startsWith('https://'));
+
+    if (isHttp) {
+      try {
+        await deleteAvatar.mutateAsync();
+      } catch (err) {
+        alert(err instanceof Error ? err.message : 'No se pudo eliminar el avatar');
+        return;
+      }
+    }
+
     setPreview(null);
     onAvatarChange(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
+
+  const busy = uploadAvatar.isPending || deleteAvatar.isPending;
 
   return (
     <div className="flex flex-col items-center gap-4">
@@ -59,15 +85,16 @@ export function AvatarUpload({ currentAvatarUrl, onAvatarChange, disabled }: Ava
               alt="Avatar"
               width={120}
               height={120}
+              unoptimized={preview.startsWith('data:')}
               className="rounded-full object-cover border-4 border-border"
             />
-            {!disabled && (
+            {!disabled && !busy && (
               <Button
                 type="button"
                 variant="destructive"
                 size="icon"
                 className="absolute -top-2 -right-2 h-8 w-8 rounded-full"
-                onClick={handleRemove}
+                onClick={() => void handleRemove()}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -81,23 +108,23 @@ export function AvatarUpload({ currentAvatarUrl, onAvatarChange, disabled }: Ava
       </div>
       
       {!disabled && (
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center justify-center gap-2">
           <Button
             type="button"
             variant="outline"
             size="sm"
+            disabled={busy}
             onClick={() => fileInputRef.current?.click()}
           >
-            <Camera className="h-4 w-4 mr-2" />
+            {busy ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Camera className="h-4 w-4 mr-2" />
+            )}
             {preview ? 'Cambiar' : 'Subir'} Avatar
           </Button>
-          {preview && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleRemove}
-            >
+          {preview && !busy && (
+            <Button type="button" variant="ghost" size="sm" onClick={() => void handleRemove()}>
               Eliminar
             </Button>
           )}
@@ -110,11 +137,11 @@ export function AvatarUpload({ currentAvatarUrl, onAvatarChange, disabled }: Ava
         accept="image/*"
         onChange={handleFileSelect}
         className="hidden"
-        disabled={disabled}
+        disabled={disabled || busy}
       />
       
       <p className="text-xs text-muted-foreground text-center max-w-xs">
-        Formatos soportados: JPG, PNG, GIF. Tamaño máximo: 2MB
+        Se guarda en Supabase Storage. JPG, PNG, WebP o GIF. Máximo 5 MB.
       </p>
     </div>
   );

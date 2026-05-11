@@ -16,7 +16,8 @@
     "db:check-supabase": "npx dotenv-cli -e .env.local -- tsx migrate-to-supabase.ts",
     "db:test-connection": "npx dotenv-cli -e .env.local -- tsx test-supabase-connection.ts",
     "db:baseline": "npx dotenv-cli -e .env.local -- tsx prisma/baseline.ts",
-    "db:storage-avatars-bucket": "tsx scripts/apply-storage-avatars-bucket.ts"
+    "db:storage-avatars-bucket": "tsx scripts/apply-storage-avatars-bucket.ts",
+    "verify:avatar-storage": "tsx scripts/verify-avatar-storage.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

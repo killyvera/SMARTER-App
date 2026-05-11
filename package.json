@@ -11,7 +11,8 @@
     "build": "npm run build --if-present --workspaces",
     "start": "cd frontend && npm start",
     "test": "npm run test --if-present --workspaces",
-    "db:storage-avatars-bucket": "cd frontend && npm run db:storage-avatars-bucket"
+    "db:storage-avatars-bucket": "cd frontend && npm run db:storage-avatars-bucket",
+    "verify:avatar-storage": "cd frontend && npm run verify:avatar-storage"
   },
   "engines": {
     "node": ">=18.0.0"
